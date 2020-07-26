@@ -11,7 +11,7 @@ assignees: webquiz
 A clear and concise description of what the bug is.
 
 **Add a minimal working example**
-Complete the template below to give a LaTeX file that is as small as possible and that reproduces your problem when run through LaTeX. Please cut-and-paste the actual code rather than uploading a screenshot.
+Complete the template below to give a LaTeX file that is as small as possible and that reproduces your problem when run through WebQuiz. Please cut-and-paste the actual code rather than uploading a screenshot.
 
 ```
 \documentclass{webquiz}
@@ -29,7 +29,7 @@ Please explain how to reproduce your problem using the code above.
 If applicable, add screenshots to help explain your problem.
 
 **Your system:**
-To help troubleshoot please cut-and-paste the output of the command `webquiz --diagnostics`, when run from a terminal on your computer. Please post the actual output and not a screenshot.
+To help troubleshoot please cut-and-paste the output of the command `webquiz --diagnostics`, when run from a terminal on your computer (this required WebQuiz 5.3 or later). Please post the actual output of the command rather than a screenshot.
 
 ```
 
