@@ -29,7 +29,7 @@ Please explain how to reproduce your problem using the code above.
 If applicable, add screenshots to help explain your problem.
 
 **Your system:**
-To help troubleshoot please cut-and-paste the output of the command `webquiz --diagnostics`, when run from a terminal on your computer (this required WebQuiz 5.3 or later). Please post the actual output of the command rather than a screenshot.
+To help troubleshoot please cut-and-paste the output of the command `webquiz --diagnostics`, when run from a terminal on your computer. This requires WebQuiz 6.0 or later. If you are not using WebQuiz version 6.0 then please update WebQuiz before filing this bug report. Please post the actual output of the command rather than a screenshot.
 
 ```
 
