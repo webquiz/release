@@ -335,9 +335,9 @@ To write the WebQuiz rcfile into this directory you may need to quit
 and run webquiz again, either using an administrator account, or using
 sudo on linux/macosx.
 
-Press the key 1-3, followed by RETURN, to:
+Press the key 1-2, followed by RETURN, to:
     1. Try to save to {rcfile} again
-    2. Save to the user rcfile {alt_rcfile}
+    2. Save to the user rcfile {user_rcfile}
     3. Give a different location for the rcfile
 Press any other key to exit without saving.
 '''
@@ -353,7 +353,7 @@ Alternatively, please give a different directory.
 '''
 
 insufficient_permissions = r'''
-Insufficient permissions. Try using sudo or using an admisitrator account.
+Insufficient permissions. Try using sudo or using an administrator account.
 {}
 '''
 

@@ -197,6 +197,7 @@ class WebQuizSettings:
         },
         version={
             'help': 'WebQuiz version number for webquizrc settings',
+            'settable': False,
         })
 
     # turn debugging on by default because any error message that we hit before
@@ -222,6 +223,8 @@ class WebQuizSettings:
                 self.settings[key]['advanced'] = False
             if not 'can_set_from_latex' in self.settings[key]:
                 self.settings[key]['can_set_from_latex'] = False
+            if not 'settable' in self.settings[key]:
+                self.settings[key]['settable'] = True
 
         # define user and system rc file and load the ones that exist
 
@@ -233,9 +236,6 @@ class WebQuizSettings:
 
         if TEXMFLOCAL == '':
             TEXMFLOCAL = webquiz_util.kpsewhich('-var-value TEXMFMAIN')
-
-        self.system_rcfile = os.path.join(TEXMFLOCAL, 'tex', 'latex', 'webquiz', 'webquizrc')
-        self.read_webquizrc(self.system_rcfile)
 
         # the user rc file defaults to:
         #   ~/.dotfiles/config/webquizrc if .dotfiles/config exists
@@ -357,15 +357,14 @@ class WebQuizSettings:
                 file_not_written = False
 
             except (OSError, PermissionError) as err:
-                # if writing to the system_rcfile then try to write to user_rcfile
-                alt_rcfile = self.user_rcfile if self.rcfile != self.user_rcfile else self.system_rcfile
                 response = input(
                     webquiz_templates.rc_permission_error.format(
                         error=err,
                         rcfile=self.rcfile,
-                        alt_rcfile=alt_rcfile))
+                        user_rcfile=self.rcfile)
+                    )
                 if response.startswith('2'):
-                    self.rcfile = alt_rcfile
+                    self.rcfile = self.user_rcfile
                 elif response.startswith('3'):
                     rcfile = input('WebQuiz rc-file: ')
                     print(f'\nTo access this rc-file you will need to use: webquiz --rcfile {rcfile} ...')
@@ -378,10 +377,6 @@ class WebQuizSettings:
         r'''
         Print the non-default settings for webquiz from the webquizrc
         '''
-        if not hasattr(self, 'rcfile'):
-            print('Please initialise WebQuiz using the command: webquiz --edit-settings\n')
-            return
-
         if setting not in ['all', 'verbose', 'help']:
             setting = setting.replace('-', '_')
             if setting in self.settings:
@@ -390,8 +385,12 @@ class WebQuizSettings:
                 self.webquiz_error(f'{setting} is an invalid setting')
 
         elif setting=='all':
-            dash = '-'*len(f'WebQuiz rc-file: {self.rcfile}')
-            print(f'{dash}\nWebQuiz rc-file: {self.rcfile}\n{dash}')
+            if hasattr(self, 'rcfile'):
+                dash = '-'*len(f'WebQuiz rc-file: {self.rcfile}')
+                print(f'{dash}\nWebQuiz rc-file: {self.rcfile}\n{dash}')
+            else:
+                dash = '-'*len(f'Default WebQuiz settings:')
+                print(f'{dash}\nDefault WebQuiz settings:\n{dash}')
             for key in self.keys():
                 print('{:<17} = {}'.format(key.replace('_', '-'), self[key]))
             print(f'{dash}')
@@ -401,7 +400,10 @@ class WebQuizSettings:
                 print('{:<17} {}'.format(key.replace('_', '-'), self.settings[key]['help'].lower()))
 
         else:
-            print(f'WebQuiz settings from {self.rcfile}')
+            if hasattr(self, 'rcfile'):
+                print(f'WebQuiz settings from {self.rcfile}:')
+            else:
+                print('Default WebQuiz settings:')
             for key in self.keys():
                 print('# {}{}\n{:<17} = {:<17}  {}'.format(
                         self.settings[key]['help'],
@@ -611,7 +613,7 @@ class WebQuizSettings:
                             key = key.strip().lower().replace('-','_')
                             value = value.strip()
                             if key in self.settings:
-                                if value != self[key]:
+                                if self.settings[key]['settable'] and value != self[key]:
                                     self[key] = value
                             elif key != '':
                                 self.webquiz_error(f'unknown setting "{key}" in {rcfile}')
@@ -721,8 +723,6 @@ class WebQuizSettings:
 
         # remove any rcfiles that exist in obvious places
         try:
-            if os.path.isfile(self.system_rcfile):
-                os.remove(self.system_rcfile)
             if os.path.isfile(self.user_rcfile):
                 os.remove(self.user_rcfile)
             if os.path.isfile(self.rcfile):
@@ -888,15 +888,17 @@ if __name__ == '__main__':
             help=argparse.SUPPRESS
         )
 
-        parser.add_argument('--version',
+        parser.add_argument('-v', '--version',
             action='version',
             version=f'%(prog)s version {metadata.version}',
-            help=argparse.SUPPRESS)
+            help=argparse.SUPPRESS
+        )
 
         parser.add_argument('--debugging',
             action='store_true',
             default=False,
-            help=argparse.SUPPRESS)
+            help=argparse.SUPPRESS
+        )
 
         parser.add_argument('--shorthelp',
             action='store_true',
