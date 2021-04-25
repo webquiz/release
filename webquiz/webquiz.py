@@ -111,34 +111,6 @@ class WebQuizSettings:
     # the 'help' field is for printing descriptions of the settings to help the
     # user - they are also printed in the webquizrc file
     settings = dict(
-        webquiz_url={
-            'default': '',
-            'help': 'URL for the webquiz web directory',
-        },
-        webquiz_www={
-            'default': '',
-            'help': 'Full path to WebQuiz web directory',
-        },
-        language={
-            'default': 'english',
-            'can_set_from_latex': True,
-            'help': 'Default language used on web pages'
-        },
-        engine = {
-            'default': 'latex',
-            'help': 'Default TeX engine used to compile web pages',
-            'values': dict(latex='', lua='--lua', xelatex='--xetex')
-        },
-        theme={
-            'default': 'default',
-            'can_set_from_latex': True,
-            'help': 'Default colour theme used on web pages'
-        },
-        time_limit={
-            'default': 0,
-            'can_set_from_latex': True,
-            'help': 'Quiz time limit (0 is unlimited)'
-        },
         breadcrumbs={
             'default': '',
             'can_set_from_latex': True,
@@ -154,6 +126,16 @@ class WebQuizSettings:
             'can_set_from_latex': True,
             'help': 'URL for department',
         },
+        engine = {
+            'default': 'latex',
+            'help': 'Default TeX engine used to compile web pages',
+            'values': dict(latex='', lua='--lua', xelatex='--xetex')
+        },
+        hide_side_menu={
+            'default': 'false',
+            'can_set_from_latex': True,
+            'help': 'Do not display the side menu at start of quiz',
+        },
         institution={
             'default': '',
             'can_set_from_latex': True,
@@ -164,10 +146,10 @@ class WebQuizSettings:
             'can_set_from_latex': True,
             'help': 'URL for institution or university',
         },
-        hide_side_menu={
-            'default': 'false',
+        language={
+            'default': 'english',
             'can_set_from_latex': True,
-            'help': 'Do not display the side menu at start of quiz',
+            'help': 'Default language used on web pages'
         },
         one_page={
             'default': 'false',
@@ -179,12 +161,6 @@ class WebQuizSettings:
             'can_set_from_latex': True,
             'help': 'Randomly order the quiz questions',
         },
-        webquiz_layout={
-            'advanced': True,
-            'default': 'webquiz_layout',
-            'can_set_from_latex': True,
-            'help': 'Name of python module that formats the quizzes',
-        },
         make4ht={
             'advanced': True,
             'default': '',
@@ -195,10 +171,37 @@ class WebQuizSettings:
             'default': 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js',
             'help': 'URL for mathjax',
         },
+        theme={
+            'default': 'default',
+            'can_set_from_latex': True,
+            'help': 'Default colour theme used on web pages'
+        },
+        time_limit={
+            'default': 0,
+            'can_set_from_latex': True,
+            'help': 'Quiz time limit (0 is unlimited)'
+        },
         version={
             'help': 'WebQuiz version number for webquizrc settings',
             'settable': False,
-        })
+        },
+        webquiz_layout={
+            'advanced': True,
+            'default': 'webquiz_layout',
+            'can_set_from_latex': True,
+            'help': 'Name of python module that formats the quizzes',
+        },
+        webquiz_url={
+            'advanced': True,
+            'default': '',
+            'help': 'URL for the webquiz web directory',
+        },
+        webquiz_www={
+            'advanced': True,
+            'default': '',
+            'help': 'Full path to WebQuiz web directory',
+        }
+    )
 
     # turn debugging on by default because any error message that we hit before
     # we process the command line options really should not happen
@@ -413,188 +416,6 @@ class WebQuizSettings:
                         '(default)' if self[key]==self.settings[key]['default'] else ''
                         )
                 )
-
-    def local_install(self, need_to_initialise=False):
-        r'''
-        Set the root for the WebQuiz web directory and copy the www files into
-        this directory. Once this is done save the settings to webquizrc.
-        This method should only be used when WebQuiz is being set up.
-
-        If `need_to_initialise` is `True` then this is a forced initialisation.
-        '''
-
-        # keep track of whether we have initialised
-        self.have_initialised = True
-
-        # prompt for directory and copy files - are these reasonable defaults
-        # for each OS?
-        if sys.platform == 'darwin':
-            default_root = '/Library/WebServer/Documents/WebQuiz'
-            platform = 'Mac OSX'
-        elif sys.platform.startswith('win'):
-            default_root = 'c:\inetpub\wwwroot\WebQuiz'
-            platform = 'Windows'
-        else:
-            default_root = '/var/www/html/WebQuiz'
-            platform = sys.platform.capitalize()
-
-        if self['webquiz_www'] != '':
-            webquiz_root = self['webquiz_www']
-        else:
-            webquiz_root = default_root
-
-        print(webquiz_templates.initialise_introduction)
-        input('Press RETURN to continue... ')
-
-        print(webquiz_templates.webroot_request.format(
-                platform=platform,
-                webquiz_dir = webquiz_root)
-        )
-        input('Press RETURN to continue... ')
-
-        files_copied = False
-        while not files_copied:
-            web_dir = input(f'\nWebQuiz web directory:\n[{webquiz_root}] ')
-            if web_dir == '':
-                web_dir = webquiz_root
-            else:
-                web_dir = os.path.expanduser(web_dir)
-
-            print(f'Web directory set to {web_dir}')
-            if web_dir=='SMS':
-                # undocumented: allow links to SMS web pages
-                self['webquiz_www'] = 'SMS'
-                self['webquiz_url'] = 'http://www.maths.usyd.edu.au/u/mathas/WebQuiz'
-
-            else:
-                try:
-                    # ...remove the doc directory
-                    web_doc = os.path.join(web_dir, 'doc')
-                    if os.path.isfile(web_doc) or os.path.islink(web_doc):
-                        os.remove(web_doc)
-                    elif os.path.isdir(web_doc):
-                        shutil.rmtree(web_doc)
-
-                    # Need to locate the www directory, which should be a subdirectory
-                    # of the webquiz scripts directory. First try using texdoc
-                    webquiz_doc = ''
-                    try:
-                        webquiz_pdf = webquiz_util.shell_command('texdoc --list --machine webquiz.pdf').split()[-1]
-                        if webquiz_pdf.endswith('webquiz.pdf'):
-                            webquiz_doc = os.path.dirname(webquiz_pdf)
-                    except subprocess.CalledProcessError:
-                        pass
-
-                    # if texdoc failed then try using TEXMFMAIN
-                    if webquiz_doc=='':
-                        try:
-                            webquiz_doc = os.path.join(webquiz_util.kpsewhich('-var-value TEXMFMAIN'), 'doc','latex', 'webquiz')
-                        except subprocess.CalledProcessError:
-                            pass
-
-                    # if we still don't have webquiz_doc then try working backwards from webquiz.cls
-                    # unlikely to work if TEXMFMAIN doesn't
-                    if not os.path.isdir(webquiz_doc):
-                        parent = os.path.dirname
-                        try:
-                            texdist_dir = parent(parent(parent(parent(parent(webquiz_util.kpsewhich('webquiz.cls'))))))
-                        except subprocess.CalledProcessError:
-                            print(webquiz_templates.not_installed.format(metadata.repository))
-                            sys.exit(1)
-
-                        webquiz_doc = os.path.join(texdist_dir, 'doc', 'latex', 'webquiz')
-
-                    # get the root directory of the source code just in case
-                    # webquiz_www still does not exist
-                    webquiz_src = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-
-                    webquiz_www = os.path.join(webquiz_src, 'www')
-                    if not os.path.isdir(webquiz_www):
-                        webquiz_www = os.path.join(webquiz_src, 'doc', 'www')
-
-                    # loop until we find some files to install or exit
-                    while not os.path.isdir(webquiz_www) or webquiz_www=='':
-                        print('\nUnable to find the WebQuiz web files')
-                        webquiz_www = input('Please enter the location of the WebQuiz www directory\nor press RETURN to exit: ')
-                        webquiz_www = os.path.expanduser(webquiz_www)
-                        if webquiz_www=='':
-                            sys.exit()
-                        if not (webquiz_www.endswith('www/') or webquiz_www.endswith('www')):
-                            print(f'\nThe webquiz web directory is called www, so\n  {webquiz_www}\ncannot be the right directory.')
-                            webquiz_www = False
-
-                        # the www directory exists so we copy it to web_dir
-                        print(f'\nCopying web files to {web_dir} ...')
-                        webquiz_util.copytree(webquiz_www, web_dir)
-
-                    self['webquiz_www'] = web_dir
-                    files_copied = True
-
-                except PermissionError:
-                    print(webquiz_templates.permission_error.format(web_dir))
-
-                except OSError as err:
-                    print(webquiz_templates.oserror_copying.format(web_dir=web_dir, err=err))
-
-        if self['webquiz_www']!='SMS':
-            # now prompt for the relative url
-            webquiz_url = input(webquiz_templates.webquiz_url_message.format(self['webquiz_url']))
-            if webquiz_url != '':
-                # removing trailing slashes from webquiz_url
-                while webquiz_url[-1] == '/':
-                    webquiz_url = webquiz_url[:len(webquiz_url) - 1]
-
-                if webquiz_url[0] != '/':  # force URL to start with /
-                    webquiz_url = '/' + webquiz_url
-
-                if not web_dir.endswith(webquiz_url):
-                    print(webquiz_templates.webquiz_url_warning)
-                    input('Press RETURN to continue... ')
-
-                self['webquiz_url'] = webquiz_url
-
-        # save the settings and exit
-        self.write_webquizrc()
-        print(webquiz_templates.initialise_ending.format(web_dir=self['webquiz_www']))
-
-    def local_uninstall(self):
-        r'''
-        Remove all of the webquiz files from the webserver
-        '''
-        if os.path.isdir(self['webquiz_www']):
-            remove = input('Do you really want to remove the WebQuiz from your web server [N/yes]? ')
-            if remove != 'yes':
-                print('WebQuiz unistall aborted!')
-                return
-
-            try:
-                shutil.rmtree(self['webquiz_www'])
-                print('WebQuiz files successfully removed from {}'.format(self['webquiz_www']))
-
-            except PermissionError as err:
-                print(webquiz_templates.insufficient_permissions.format(err))
-                sys.exit(1)
-
-            except OSError as err:
-                self.webquiz_error('There was a problem removing webquiz files from {}'.format(self['webquiz_www']), err)
-
-            # now reset and save the locations of the webquiz files and URL
-            self['webquiz_url'] = ''
-            self['webquiz_www'] = ''
-            self.write_webquizrc()
-
-        else:
-            self.webquiz_error('uninstall: no webquiz files are installed on your web server??')
-
-        for rfile in ['system', 'user']:
-            rcfile = getattr(self, rfile+'_rcfile')
-            if os.path.isfile(rcfile):
-                rm = input(f'Remove {rfile} rcfile: {rcfile}\n[Y/no] ')
-                if rm != 'no':
-                    try:
-                        os.remove(rcfile)
-                    except (OSError, PermissionError) as err:
-                        self.webquiz_error(f'There was a problem deleting {rcfile}', err)
 
     def read_webquizrc(self, rcfile, must_exist=False):
         r'''
@@ -877,17 +698,6 @@ if __name__ == '__main__':
             help=argparse.SUPPRESS
         )
 
-        install_parser.add_argument('--local-install',
-            action='store_true',
-            default=False,
-            help=argparse.SUPPRESS
-        )
-        install_parser.add_argument('--local-uninstall',
-            action='store_true',
-            default=False,
-            help=argparse.SUPPRESS
-        )
-
         parser.add_argument('-v', '--version',
             action='version',
             version=f'%(prog)s version {metadata.version}',
@@ -920,14 +730,6 @@ if __name__ == '__main__':
 
         if options.diagnostics:
             webquiz_util.webquiz_diagnostics()
-            sys.exit()
-        elif options.local_install:
-            # uninstall web files and exit
-            settings.local_install()
-            sys.exit()
-        elif options.local_uninstall:
-            # uninstall web files and exit
-            settings.local_uninstall()
             sys.exit()
         elif options.tex_install:
             # install files from zip file into tex distribution and then exit

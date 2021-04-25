@@ -302,7 +302,7 @@ Error: {err}
 Please give a different directory
 '''
 
-webquiz_url_message = r'''
+webquiz_www_message = r'''
 Please give the relative URL for the WebQuiz web directory. For example,
 if the base of your web server's directory is /var/www/html/ and the
 WebQuiz web directory is /var/www/html/courses/WebQuiz then the
