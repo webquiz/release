@@ -191,6 +191,24 @@
 \patchcmd\l@section{1.0em}{0.5em}{}{}
 \makeatother
 
+\usepackage{hyperref}
+\hypersetup{%
+    colorlinks=true,
+    linkcolor=SaddleBrown,
+    urlcolor=Brown,
+    pdfauthor   = {\webquiz{authors}                       },
+    pdfkeywords = {\webquiz{keywords}                      },
+    pdfsubject  = {\webquiz{description}                   },
+    pdfinfo     = {%
+        copyright    = {\webquiz{copyright}},
+        licence      = {\webquiz{licence}},
+        release date = {\webquiz{release date}},
+        url          = {\webquiz{url}},
+    }
+}
+
+
+
 \begin{document}
   \hypersetup{pdftitle={WebQuiz manual}}
 
