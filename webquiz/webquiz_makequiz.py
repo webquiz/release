@@ -65,7 +65,7 @@ class MakeWebQuiz(object):
         try:
             language_file = webquiz_util.kpsewhich(f'webquiz-{self.quiz.language}.lang')
         except subprocess.CalledProcessError:
-            self.webquiz_error(f'kpsewhich is unable to find language file for "{self.quiz.language}"')
+            self.webquiz_error(f'kpsewhich is unable to find the language file "{self.quiz.language}"')
         # read the language file and store as a dictonary
         self.language = webquiz_util.MetaData(language_file)
 

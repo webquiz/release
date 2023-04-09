@@ -490,9 +490,11 @@
      Thanks are due to Bob Howlett for general help with \CSS and to
      Michal Hoftich for invaluable technical advice on \TeXfht. Thanks
      are due to
-        Thomas Cailleteau
-        Michael Palmer and
+        Thomas Cailleteau,
+        Michael Palmer,
         Hendrik Suess
+        and
+        Michal Vašíček
      for helpful feedback on the package.
 
    \section{The \WebQuiz document class --- \hologo{LaTeX}{} commands}
@@ -1106,7 +1108,7 @@
 
     \noindent
     In addition, each \textit{crumb} in a breadcrumb, except for the
-    ``magic crumbs'' listed above, is allowed to be arbitrary text ---
+    ``magic crumbs'' listed above, is allowed to contain text ---
     although, non-ascii characters may cause problems. In this case, the
     last ``word'' in the crumb is treated as a URL if it either beings
     with a forward slash, \BashCode|/|, or if it begins with
@@ -1261,6 +1263,14 @@
   set the default \LatexCode|\Department|, \LatexCode|\DepartmentURL|,
   \LatexCode|\Institution| and \LatexCode|\InstitutionURL| in such a
   style file as well.
+
+  Finally, we note that certain special characters in URLs can cause
+  problems. For example, \WebQuiz will give an error if you try to use
+  \LaTeXCode|\BreadCrumb{Home www.maths.usyd.edu.au/~mathas}| because
+  \TeX4ht\ expands the $\sim$-character. You can correct this using the
+  \LaTeXCode|\string| command:
+
+  \InputLatexCode{breadcrumbs-user}
 
   \subsection{\WebQuiz document class options}\label{SS:classOptions}
 

@@ -405,7 +405,7 @@ setup(name             = settings.program,
       provides         = 'webquiz',
       entry_points     = { 'console_scripts': [ 'webquiz=webquiz.webquiz:main' ], },
 
-      license          = settings.licence,
+      license          = settings.license,
 
       classifiers      = [
         'Development Status :: 5 - Production/Stable',
