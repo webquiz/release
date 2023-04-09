@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# Script to compile the WebQuiz manual furst generating all of the PNG files
+# Script to compile the WebQuiz manual first generating all of the PNG files
 # needed by the manual together with the various lists of languages, themes and
 # usage messages. As a bonus this script can also be used to automatically
 # generate all of the css files from the scss files in the css directory and it
-# can check for missing, or unused images in gthe examples directory.
+# can check for missing, or unused images in the examples directory.
 
 # usage: makedoc --[fast|quiet] --[all|check-examples|examples|languages|man-page|online|themes|usage]
 
@@ -200,7 +200,7 @@ else
        -s|--settings)
          make_settings
          shift ;;
-       -t|--theme)
+       -t|--themes)
          make_themes
          shift ;;
        -u|--usage)

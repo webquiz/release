@@ -294,10 +294,10 @@ class WebQuizSettings:
 
                 skey = '{}'.format(self[key])
                 setting = input('{}{}[{}]: '.format(
-                                    self.settings[key]['help'],
-                                    ' ' if len(skey)<40 else '\n',
-                                    skey
-                          )
+                        self.settings[key]['help'],
+                        ' ' if len(skey)<40 else '\n',
+                        skey
+                    )
                 ).strip()
                 if setting != '':
                     if key == 'webquiz_url' and setting[0] != '/':
@@ -335,6 +335,15 @@ class WebQuizSettings:
         advanced options last/
         '''
         return sorted(self.settings.keys(), key=lambda k: f'{self.settings[k]["advanced"]}{k}')
+
+    def write_webquizrc(self):
+        r'''
+        Write the settings to the webquizrc file, defaulting to the user
+        rcfile if unable to write to the system rcfile
+        '''
+        if not hasattr(self, 'rcfile'):
+            # when initialising an rcfile will not exist yet
+            self.rcfile = self.user_rcfile
 
         file_not_written = True
         while file_not_written:
@@ -381,9 +390,14 @@ class WebQuizSettings:
         Print the non-default settings for webquiz from the webquizrc
         '''
         if setting not in ['all', 'verbose', 'help']:
-            setting = setting.replace('-', '_')
+            setting, value = setting.split('=', 1)
+            setting = setting.strip().replace('-', '_')
             if setting in self.settings:
-                print(self.settings[setting]['value'])
+                if value.strip() != '':
+                    self[setting] = value.strip()
+                    self.write_webquizrc()
+                else:
+                    print(self.settings[setting]['value'])
             else:
                 self.webquiz_error(f'{setting} is an invalid setting')
 
