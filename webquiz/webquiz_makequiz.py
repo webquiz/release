@@ -50,7 +50,7 @@ class MakeWebQuiz(object):
         self.settings = settings
         self.metadata = metadata
         self.quiz_file, extension = os.path.splitext(quiz_file)
-        self.quiz_name = os.path.basename(self.quiz_file)
+        self.quiz_name = quiz_name
         self.webquiz_url = settings['webquiz_url']
         if self.webquiz_url[-1] == '/':
             self.webquiz_url =  self.webquiz_url[:len(self.webquiz_url)-1]
@@ -197,10 +197,8 @@ class MakeWebQuiz(object):
             self.options.run(cmd)
 
             # move the css file into the quiz_file subdirectory
-            if os.path.exists(self.quiz_file + '.css'):
-                shutil.move(
-                    self.quiz_file + '.css',
-                    os.path.join(self.quiz_name, self.quiz_name + '.css'))
+            if os.path.exists(f'{self.quiz_file}.css'):
+                shutil.move(f'{self.quiz_file}.css', os.path.join(self.quiz_name, self.quiz_name + '.css'))
 
             # Now move any images that were created into the quiz_name
             # subdirectory and update the links in the html file As htlatex
@@ -252,7 +250,7 @@ class MakeWebQuiz(object):
             description=self.metadata.description,
             institution=self.quiz.institution,
             mathjax=self.settings['mathjax'],
-            quiz_file=self.quiz_name,
+            quiz_name=self.quiz_name,
             theme=self.quiz.theme,
             version=self.metadata.version,
             webquiz_url=self.webquiz_url

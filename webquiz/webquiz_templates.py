@@ -28,7 +28,7 @@ html_meta = r'''<meta http-equiv="Content-Type" content="text/html; charset=utf-
   <meta name="Copyright" content="WebQuiz: {copyright}">
   <meta name="keywords" content="WebQuiz, TeX4ht, make4ht, latex, python, quiz, mathematics">
   <link href="{webquiz_url}/css/webquiz-{theme}.css" type="text/css" rel="stylesheet">
-  <link href="{quiz_file}/{quiz_file}.css" type="text/css" rel="stylesheet">
+  <link href="{quiz_name}/{quiz_name}.css" type="text/css" rel="stylesheet">
   <script src="{mathjax}?config=MML_CHTML"></script>
 '''
 

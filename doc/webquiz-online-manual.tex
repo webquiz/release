@@ -57,7 +57,7 @@
 The use of \WebQuiz is described in the next section. Later
 sections describe how each of the \WebQuiz environments are used.
 
-The \LatexCode|discussion| environment in \WebQuiz can also be used to
+The \LaTeXCode|discussion| environment in \WebQuiz can also be used to
 write Web Pages like this one (The pages you are reading here were
 written using \WebQuiz.)
 \end{discussion}
@@ -116,25 +116,25 @@ an easily readable layout.
   name of the unit of study, the location of the homepage for the
   unit and the index file for the quizzes for this unit; this is
   done using the commands
-  \LatexCode|\UnitCode|,
-  \LatexCode|\UnitName|,
-  \LatexCode|\UnitURL| and
-  \LatexCode|\QuizzesURL| respectively. If the
-  command \LatexCode|\QuizzesURL| is omitted then the URL for the quiz
-  index file is set to \LatexCode|\UnitURL/|Quizzes.
+  \LaTeXCode|\UnitCode|,
+  \LaTeXCode|\UnitName|,
+  \LaTeXCode|\UnitURL| and
+  \LaTeXCode|\QuizzesURL| respectively. If the
+  command \LaTeXCode|\QuizzesURL| is omitted then the URL for the quiz
+  index file is set to \LaTeXCode|\UnitURL/|Quizzes.
 
   The title of the quiz can be set in the preamble using the
-  \LatexCode|\title| command. Note that the \LatexCode|\title|
-  command \emph{must} appear before the \LatexCode|\begin{document}| command.
+  \LaTeXCode|\title| command. Note that the \LaTeXCode|\title|
+  command \emph{must} appear before the \LaTeXCode|\begin{document}| command.
   As in any \LaTeX{} document, the preamble can define macros and load
   other \LaTeX{} packages the usual way .
 
-  By using the \LatexCode|discussion| environment you can summarise the
+  By using the \LaTeXCode|discussion| environment you can summarise the
   material for the students or add introductory material for the quiz.
-  For example, \LatexCode|discussion| environments can be used to recall
+  For example, \LaTeXCode|discussion| environments can be used to recall
   that main concepts being covered by the quiz or to give references to
   the lecture notes for the unit. The syntax for the
-  \LatexCode|discussion| environment is as follows:
+  \LaTeXCode|discussion| environment is as follows:
 \begin{latexcode}
       \begin{discussion}[optional short heading][optional heading]
         . . .
@@ -148,7 +148,7 @@ an easily readable layout.
   is  also given then it is used in the side-menu. The quiz can contain
   zero or more discussion items ( and zero or more quiz questions).
 
-  Questions are set inside a \LatexCode|question| environment. The text is
+  Questions are set inside a \LaTeXCode|question| environment. The text is
   followed by the answers.
 
   \WebQuiz supports three types of questions:
@@ -184,18 +184,18 @@ an easily readable layout.
     \end{question}
 \end{latexcode}
   The different choices in a multiple choice question must be inside a
-  \LatexCode|choice| environment. This environment behaves like a
+  \LaTeXCode|choice| environment. This environment behaves like a
   standard \LaTeX{} list environment except that instead of using
-  \LatexCode|\item| for list item you use:
+  \LaTeXCode|\item| for list item you use:
   \begin{itemize}
-      \item \LatexCode|\correct| for a correct choice
-      \item \LatexCode|\incorrect| for an incorrect choice
-      \item \LatexCode|\feedback| to give feedback to the student when
+      \item \LaTeXCode|\correct| for a correct choice
+      \item \LaTeXCode|\incorrect| for an incorrect choice
+      \item \LaTeXCode|\feedback| to give feedback to the student when
       they select this choice
   \end{itemize}
-  At most one \LatexCode|\feedback| response should be given for each
-  \LatexCode|\correct| and each \LatexCode|\incorrect| response.
-  The \LatexCode|\feedback| commands are optional; however, it is
+  At most one \LaTeXCode|\feedback| response should be given for each
+  \LaTeXCode|\correct| and each \LaTeXCode|\incorrect| response.
+  The \LaTeXCode|\feedback| commands are optional; however, it is
   recommended that you use them because targeted feedback to the
   students based on their responses can be beneficial.
   \par
@@ -247,8 +247,8 @@ an easily readable layout.
 \end{latexcode}
 \end{discussion}
 \begin{discussion}[Question 2]
- To allow multiple (or no) correct answer we add \LatexCode|multiple| as an
-  optional argument to the \LatexCode|choice| environment:
+ To allow multiple (or no) correct answer we add \LaTeXCode|multiple| as an
+  optional argument to the \LaTeXCode|choice| environment:
 \begin{latexcode}
     \begin{question}
       . . .question text. . .
@@ -265,7 +265,7 @@ an easily readable layout.
     \end{question}
 \end{latexcode}
   The only difference to the previous case is that zero or more
-  \LatexCode|\correct| commands can appear.
+  \LaTeXCode|\correct| commands can appear.
   \par
   For example, \qref{question2} below was typed into \WebQuiz
   using the following commands:
@@ -294,12 +294,12 @@ an easily readable layout.
 \end{discussion}
 \begin{discussion}[Question 3]
 
-  By default, the \LatexCode|choice| environments puts the multiple
+  By default, the \LaTeXCode|choice| environments puts the multiple
   choice options into one column format. Sometimes the options look
   better when listed in two or more columns, however, this should be
   used sparingly as multiple columns do not always display well if the
-  quiz is viewed on a mobile device.  By using the \LatexCode|columns|
-  key word in a \LatexCode|choice| environment you can specify the
+  quiz is viewed on a mobile device.  By using the \LaTeXCode|columns|
+  key word in a \LaTeXCode|choice| environment you can specify the
   number of columns in the HTML version of the quiz.
 
 \begin{latexcode}
@@ -317,7 +317,7 @@ an easily readable layout.
       \end{choice}
     \end{question}
 \end{latexcode}
-  If the optional argument \LatexCode|[multiple]| is not present, then the
+  If the optional argument \LaTeXCode|[multiple]| is not present, then the
   question admits precisely one correct answer.
   \par
   For example, \qref{question3} below was typed into \WebQuiz
@@ -384,16 +384,16 @@ an easily readable layout.
 \begin{discussion}[Question 4]
   The final type of question that \WebQuiz supports is a question that
   requires an answer, which can be a number or a string.  The answer is
-  typeset using the \LatexCode|\answer| macro. The \LatexCode|\answer|
+  typeset using the \LaTeXCode|\answer| macro. The \LaTeXCode|\answer|
   macro takes two arguments: an optional comparison method, which
-  defaults to \LatexCode|string|, and the correct answer for the
+  defaults to \LaTeXCode|string|, and the correct answer for the
   question:
   \begin{latexcode}
     \answer[comparison method]{correct answer}
   \end{latexcode}
   Feedback for correct and incorrect answers is given
-  using the macros \LatexCode|\whenRight| and \LatexCode|\whenWrong|,
-  respectively. The structure of questions with \LatexCode|\answer|'s is as follows:
+  using the macros \LaTeXCode|\whenRight| and \LaTeXCode|\whenWrong|,
+  respectively. The structure of questions with \LaTeXCode|\answer|'s is as follows:
   \begin{latexcode}
          \begin{question}
            . . .question text. . .
@@ -430,7 +430,7 @@ an easily readable layout.
 \begin{discussion}[Index Files]
   \WebQuiz also provides a mechanism for creating a web page
   containing an index of all quizzes for a given Unit of Study.
-  This is done with a \WebQuiz file that contains a \LatexCode|quizindex|
+  This is done with a \WebQuiz file that contains a \LaTeXCode|quizindex|
   environment. The syntax for this environment is as follows:
 \begin{latexcode}
     \begin{quizindex}
@@ -440,7 +440,7 @@ an easily readable layout.
     \end{quizindex}
 \end{latexcode}
 If no \textit{URL} is given as an optional argument to
-\LatexCode|\quiz| then
+\LaTeXCode|\quiz| then
   \WebQuiz sets the url(s) to \BashCode|quiz1.html|, \BashCode|quiz2.html|
   and so on.
 \end{discussion}
@@ -458,8 +458,8 @@ If no \textit{URL} is given as an optional argument to
     To write quizzes using \WebQuiz it is only necessary to know
     \LaTeX, however, the \WebQuiz system has three components:
     \begin{itemize}
-      \item A \LaTeX{} document class file, \LatexCode{webquiz.cls}, and
-      a \TeXfht configuration file, \LatexCode{webquitexz.cfg}, that enable the
+      \item A \LaTeX{} document class file, \LaTeXCode{webquiz.cls}, and
+      a \TeXfht configuration file, \LaTeXCode{webquitexz.cfg}, that enable the
       quiz files to be processed by \LaTeX{} and \TeXfht, respectively.
       \item A python program, \BashCode{webquiz}, that translates the \XML
       file that is produced by \TeXfht into \HTML.

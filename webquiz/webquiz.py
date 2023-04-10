@@ -67,10 +67,11 @@ def preprocess_with_pst2pdf(options, quiz_file):
     INPUT: quiz_file should be the name of the quiz file, WITHOUT the .tex extension
     '''
     options.talk(f'Preprocessing {quiz_file} with pst2pdsf')
+
     try:
         # pst2pdf converts pspicture environments to svg images and makes a
         # new latex file quiz_file+'-pdf' that includes these
-        cmd = f'pst2pdf --svg --imgdir={quiz_file} {quiz_file}.tex'
+        cmd = f'pst2pdf --svg --imgdir {quiz_file} {quiz_file}.tex'
         # pst2pdf is missing a #!-header so we need shell=True
         options.run(cmd, shell=True)
     except OSError as err:
@@ -89,10 +90,8 @@ def preprocess_with_pst2pdf(options, quiz_file):
                 for line in pst_file:
                     pst_fixed.write(fix_svg.sub(r'\1{%s/\2.svg}' % quiz_file, line))
     except OSError as err:
-        webquiz_util.webquiz_error(options.debugging,
-            f'there was an problem running pst2pdf for {quiz_file}',
-            err
-        )
+        webquiz_util.webquiz_error(options.debugging, f'there was an problem running pst2pdf for {quiz_file}', err)
+
 
 class WebQuizSettings:
     r'''
@@ -803,7 +802,7 @@ if __name__ == '__main__':
             if ext=='':
                 ext = '.tex'
                 quiz_file += ext
- 
+
             # windows likes adding a prefix of '.\\'to filename and this causes havoc with latex
             if os.path.dirname(quiz_file)=='.':
                 quiz_file = os.path.basename(quiz_file)
@@ -816,6 +815,8 @@ if __name__ == '__main__':
 
             # the quiz name and the quiz_file will be different if pst2pdf is used
             quiz_name = quiz_file
+            quiz_name, _ = os.path.splitext(quiz_name)  # extract filename and extension
+
             if options.quiet < 2:
                 print(f'WebQuiz generating web page for {quiz_file}')
 
@@ -830,21 +831,17 @@ if __name__ == '__main__':
 
                 try:
                     brac = doc.index(r'\documentclass[') + 15  # start of class options
-                    if 'pst2pdf' in [
-                            opt.strip()
-                            for opt in doc[brac:brac+doc[brac:].index(']')].split(',')
-                    ]:
+                    if 'pst2pdf' in [ opt.strip() for opt in doc[brac:brac+doc[brac:].index(']')].split(',') ]:
                         preprocess_with_pst2pdf(options, quiz_file[:-4])
                         options.pst2pdf = True
                         # now run webquiz on the modified tex file
                         quiz_file = quiz_file[:-4] + '-pdf-fixed.tex'
+
                 except ValueError:
                     pass
 
             # the file exists and is readable so make the quiz
             webquiz_makequiz.MakeWebQuiz(quiz_name, quiz_file, options, settings, metadata)
-
-            quiz_name, ext = os.path.splitext(quiz_name)  # extract filename and extension
 
             # move the css file into the directory for the quiz
             css_file = os.path.join(quiz_name, quiz_name + '.css')
