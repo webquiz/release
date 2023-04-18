@@ -353,8 +353,7 @@ class MakeWebQuiz(object):
         self.webquiz_init = webquiz_templates.webquiz_init.format(
             number_questions   = self.number_questions,
             number_discussions = self.number_discussions,
-            quiz_file          = self.quiz_name,
-            webquiz_url        = self.webquiz_url
+            quiz_name          = self.quiz_name,
         )
 
     def add_quiz_header_and_questions(self):

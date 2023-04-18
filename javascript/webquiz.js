@@ -403,7 +403,10 @@ function WebQuizInit(questions, discussions, quizfile) {
 
     // remove question arrows when there are no questions
     if (qTotal==0) {
-        document.getElementsByClassName('arrows')[0].style.display='none';
+        try{
+            document.getElementsByClassName('arrows')[0].style.display='none';
+        }
+        catch(err){}
     }
 
     // display the first question or discussion item
@@ -437,6 +440,7 @@ function WebQuizInit(questions, discussions, quizfile) {
     if (QuizTitles.length > 0 && quizindex_menu) {
         create_quizindex_menu();
     }
+    window.status = 'webquiz_initialised'
 }
 
 // stop the quiz and, if configured, submit the results

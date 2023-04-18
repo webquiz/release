@@ -131,7 +131,7 @@ class WebQuizSettings:
             'values': dict(latex='', lua='--lua', xelatex='--xetex')
         },
         hide_side_menu={
-            'default': 'false',
+            'default': False,
             'can_set_from_latex': True,
             'help': 'Do not display the side menu at start of quiz',
         },
@@ -151,12 +151,12 @@ class WebQuizSettings:
             'help': 'Default language used on web pages'
         },
         one_page={
-            'default': 'false',
+            'default': False,
             'can_set_from_latex': True,
             'help': 'Display questions on one page',
         },
         random_order={
-            'default': 'false',
+            'default': False,
             'can_set_from_latex': True,
             'help': 'Randomly order the quiz questions',
         },
@@ -193,7 +193,7 @@ class WebQuizSettings:
         webquiz_url={
             'advanced': True,
             'default': '',
-            'help': 'URL for the webquiz web directory',
+            'help': 'URL for the webquiz web directory, usually set to the CDN',
         },
         webquiz_www={
             'advanced': True,
@@ -252,10 +252,9 @@ class WebQuizSettings:
 
         self.read_webquizrc(self.user_rcfile)
 
-        # if webquiz_url has not been set in the settings files, or if the
-        # version number in the settings file not current, then webquiz_url
-        # defaults to the cdn 
-        if self['webquiz_url'] == '' or self['version'] < metadata.version:
+        # if webquiz_url has not been set in the settings files then
+        # webquiz_url defaults to the using cdn
+        if self['webquiz_url'] == '':
             self['webquiz_url'] = f'https://cdn.jsdelivr.net/gh/webquiz/release@{self["version"]}/'
 
     def __getitem__(self, key):
@@ -313,11 +312,13 @@ class WebQuizSettings:
                         print(f'setting not changed: {setting} is not a valid TeX engine')
                         setting = self['engine']
 
-                    elif key in ['hide_side_menu', 'random_order']:
+                    elif isinstance(self.settings[key]['default'], bool):
                         setting = setting.lower()
                         if setting not in ['true', 'false']:
                             print(f'setting not changed: {key} must be True or False')
                             setting = self[key]
+                        else:
+                            setting = setting=='true'
 
                     elif setting=='NONE':
                         setting = ''
@@ -422,12 +423,12 @@ class WebQuizSettings:
                 print('Default WebQuiz settings:')
             for key in self.keys():
                 print('# {}{}\n{:<17} = {:<17}  {}'.format(
-                        self.settings[key]['help'],
-                        ' (advanced)' if self.settings[key]['advanced'] else '',
-                        key.replace('_', '-'),
-                        self[key],
-                        '(default)' if self[key]==self.settings[key]['default'] else ''
-                        )
+                    self.settings[key]['help'],
+                    ' (advanced)' if self.settings[key]['advanced'] else '',
+                    key.replace('_', '-'),
+                    self[key],
+                    '(default)' if self[key]==self.settings[key]['default'] else ''
+                    )
                 )
 
     def read_webquizrc(self, rcfile, must_exist=False):
@@ -448,7 +449,10 @@ class WebQuizSettings:
                             value = value.strip()
                             if key in self.settings:
                                 if self.settings[key]['settable'] and value != self[key]:
-                                    self[key] = value
+                                    if isinstance(self.settings[key]['default'], bool):
+                                        self[key] = value.lower()=='true'
+                                    else:
+                                        self[key] = value
                             elif key != '':
                                 self.webquiz_error(f'unknown setting "{key}" in {rcfile}')
 

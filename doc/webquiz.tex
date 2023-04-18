@@ -982,6 +982,7 @@
     \ScreenShot{Example breadcrumbs}{breadcrumbs}
     The drop-down menu is normally hidden,  appearing only after the
     $\equiv$ ``button'' on the web page is clicked.
+    \ScreenShot{Example breadcrumbs with drop-down menu}{breadcrumbs-dropdown}
 
     Usually, most of the breadcrumbs are navigation links to other web pages. In
     the example above:
@@ -1267,8 +1268,9 @@
   Finally, we note that certain special characters in URLs can cause
   problems. For example, \WebQuiz will give an error if you try to use
   \LaTeXCode|\BreadCrumbs{Home www.maths.usyd.edu.au/~mathas}| because
-  \TeX4ht\ expands the $\sim$-character. You can correct this using the
-  \LaTeXCode|\string| command:
+  \TeX4ht\ expands the $\sim$-character. The easiest fix for this is to
+  add a \LaTeXCode|\string| command before any special characters in the
+  breadcrumbs:
 
   \InputLatexCode{breadcrumbs-user}
 
@@ -1292,8 +1294,8 @@
     \CrossIndex{document class options}{fixedorder}
     \CrossIndex{document class options}{randomorder}
       By default, the questions in the quiz are displayed in a
-      \DefaultValue{fixedorder} for all students who take the quiz.
-      This order is the order that the question appear in the \LaTeX{}
+      \DefaultValue{fixedorder} for all students who take the quiz,
+      which is the order that the question appear in the \LaTeX{}
       file for the quiz. That is, the first question in the online quiz
       is the first question appearing in the \LaTeX file, the second
       question in the quiz is the second question in the \LaTeX{} file,

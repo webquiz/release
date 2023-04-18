@@ -24,12 +24,11 @@ Alternatively, it is possible to extract a png image of the PDF file created by
 webquiz.  For the full extraction specifications see the pages array below
 
 As an added bonus, we use imagehash to store hashes for each of the extracted
-image in the file good_image_hashes and we flag if any image changes
+image in the file webquiz_image_hashes and we flag if any image changes
 substantially. In effect, this makes the images in the manual into a test
 suite.
 
 REQUIRES:
-    - pip install imgkit
     - brew install --cask wkhtmltopdf
     - pip install imagehash
 '''
@@ -37,7 +36,6 @@ REQUIRES:
 import argparse
 import glob
 import json
-import imgkit
 import imagehash
 import os
 import re
@@ -60,7 +58,7 @@ webquiz_mode = '-qq -d'
 webkit2png_mode = ''
 
 image_hash_file   = 'webquiz_image_hashes.json'
-good_image_hashes = json.load(open(image_hash_file)) if os.path.isfile(image_hash_file) else {}
+webquiz_image_hashes = json.load(open(image_hash_file)) if os.path.isfile(image_hash_file) else {}
 
 class Convert:
     r'''
@@ -85,7 +83,7 @@ class Convert:
     def __init__(self, page, **args):
         # set some default values and then process the arguments
         defaults = dict(
-            delay = 300,
+            delay = 2000,
             js = '',
             js_end = '',
             page = page,
@@ -108,7 +106,7 @@ class Convert:
                 self.js += f"document.forms['Q{quest[0]}Form'].elements[0].value='{quest[1]}';"
                 if len(quest)==2: # checking is disabled by second colon: quest:value: => len=3
                     self.js += f'gotoQuestion({quest[0]});checkAnswer({quest[0]});'
-                self.delay += 200
+                self.delay += 1000
 
         if not self.question is None:
             for qp in self.question.split('|'):
@@ -117,7 +115,7 @@ class Convert:
                     self.js += f"document.forms['Q{quest[0]}Form'].elements[{int(p)-1}].checked=true;"
                 if len(quest)==2: # checking is disabled by second colon: quest:parts: => len=3
                     self.js += f'gotoQuestion({quest[0]});checkAnswer({quest[0]});'
-                self.delay += 200
+                self.delay += 1000
 
         # add on the final bit of javascript
         self.js += self.js_end
@@ -137,7 +135,7 @@ class Convert:
 
     # dictionary of conversion methods used in self.wrie_image()
     convert = dict(
-        html = 'imgkit',
+        html = 'shot_scraper',
         pdf  = 'pdf2png',
         ps   = 'ps2png'
     )
@@ -149,6 +147,7 @@ class Convert:
           If `cleaning` is `True` then all unnecessary files are deleted
           once after the image is created
         '''
+        global webquiz_image_hashes
         if self.options.force or self.modified():
             print(f'\nExtracting image file {self.page_out}...')
             if os.path.exists(self.page_out+'.png'):
@@ -164,11 +163,11 @@ class Convert:
                 # if the image file exists compare with the saved image hash
                 if os.path.isfile(f'{self.page_out}.png'):
                     new_hash = imagehash.colorhash(Image.open(f'{self.page_out}.png'), binbits=3)
-                    if self.page_out in good_image_hashes:
-                        if imagehash.hex_to_flathash(good_image_hashes[self.page_out], hashsize=3) - new_hash > 10:
+                    if self.page_out in webquiz_image_hashes:
+                        if imagehash.hex_to_flathash(webquiz_image_hashes[self.page_out], hashsize=3) - new_hash > 10:
                             print(f'Bad image hash for {self.page_out}')
                     else:
-                        good_image_hashes[self.page_out] = str(new_hash)
+                        webquiz_image_hashes[self.page_out] = str(new_hash)
 
             except KeyError:
                 raise ValueError(f'unknown src={self.src} for {self.page}')
@@ -181,43 +180,88 @@ class Convert:
         else:
             print(f'{page.page_out} is up to date')
 
-    def imgkit(self):
+    def shot_scraper(self):
         '''
-        Extract and trim and image using webquiz, imgkit and mogrify.
+        Extract and trim and image using webquiz, wkhtmltoimage and mogrify.
         Necessary since webkit2png is no oonger supported and has not been
-        posrted to python3. On the plus side, we can mprotant the module and
-        call directly witho0ut using subprocess.
+        ported to python3. On the plus side, we can mprotant the module and
+        call directly without using subprocess.
 
         The full list of options can be found at
         https://wkhtmltopdf.org/usage/wkhtmltopdf.txt
         '''
-        options = { 'javascript-delay': self.delay }
+        cmd =  f'shot-scraper  "{examplesURL}/{self.page}.html" -o "{self.page_out}.png"'
         if self.js:
-            options['run-script'] = self.js
+            # wrap the javascript in a promise
+            cmd += f' --javascript "new Promise(takeShot=>{{ {self.js}; setTimeout(()=>{{ takeShot(); }},1500); }})"'
+
+        if self.delay:
+            cmd += f' --wait {self.delay}'
+
         if self.width:
-            options['width'] = self.width
-        imgkit.from_url(f'{examplesURL}/{self.page}.html', f'{self.page_out}.png', options = options)
+            cmd += f' --width {self.width}'
+
+
+        if webkit2png_mode == '--debug':
+            print(f'{cmd=}')
+
+        # run wkhtmltoimage on the webquiz file
+        run(cmd)
 
         if os.path.exists(f'{self.page_out}.png'): # remove png file if it already exists
             run(f'mogrify -trim -gravity center {self.page_out}.png')
         else:
-            print(f'makeimages error: webkit2png failed because {self.page_out}-full.png does not exist')
+            print(f'makeimages error: shot-scraper failed because {self.page_out}.png does not exist')
+
+    def wkhtmltoimage(self):
+        '''
+        Extract and trim and image using webquiz, wkhtmltoimage and mogrify.
+        Necessary since webkit2png is no oonger supported and has not been
+        ported to python3. On the plus side, we can mprotant the module and
+        call directly without using subprocess.
+
+        The full list of options can be found at
+        https://wkhtmltopdf.org/usage/wkhtmltopdf.txt
+        '''
+        cmd =  f'wkhtmltoimage --enable-javascript --javascript-delay {self.delay}'
+        if self.js:
+            cmd += f' --run-script "{self.js}"'
+
+        #if self.width:
+        #    cmd += f' --width {self.width}'
+
+        cmd += f' "{examplesURL}/{self.page}.html" {self.page_out}.png'
+
+        if webkit2png_mode == '--debug':
+            print(f'{cmd=}')
+
+        # run wkhtmltoimage on the webquiz file
+        run(cmd)
+
+        if os.path.exists(f'{self.page_out}.png'): # remove png file if it already exists
+            run(f'mogrify -trim -gravity center {self.page_out}.png')
+        else:
+            print(f'makeimages error: wkhtmltoimage failed because {self.page_out}.png does not exist')
+
 
     def webkit2png(self):
         r'''
             Extract and trim and image using webquiz, webkit2png and mogrify
+
+
+            NOT USED as webkit2png has not been ported to python3`
         '''
 
         # extract a png image for the web page using webkit2png
         cmd = r"webkit2png {debug} --ignore-ssl-check -o {fout} {width} --delay={delay} {js} {URL}/{fin}.html".format(
-                        URL=examplesURL,
-                        debug = webkit2png_mode,
-                        delay=self.delay,
-                        fin=self.page,
-                        fout=self.page_out,
-                        js='' if self.js is None else f'--js="{self.js}"',
-                        width=f'-W {self.width}' if self.width!='' else '-F'
-                    )
+            URL=examplesURL,
+            debug = webkit2png_mode,
+            delay=self.delay,
+            fin=self.page,
+            fout=self.page_out,
+            js='' if self.js is None else f'--js="{self.js}"',
+            width=f'-W {self.width}' if self.width!='' else '-F'
+        )
         if webkit2png_mode == '--debug':
             print(cmd)
         run(cmd)
@@ -261,31 +305,31 @@ pages = [
     Convert("answer-integer",   Question="1:18"),
     Convert("answer-lowercase", Question="1:long|2:LONG"),
     Convert("answer-number",    Question="1:0.75|2:3/4"),
-    Convert("answer-string",    Question="1:canberra"),
     Convert("answer-star",      Question="1:Canberra|2:canberra"),
-    Convert("breadcrumbs",      js="toggle_quizindex_menu();"),
-    Convert("breadcrumbs",      page_out="quizindex-dropdown", js='toggle_quizindex_menu();'),
-    Convert("breadcrumbs-user", page_out="quizindex-dropdown", js='toggle_quizindex_menu();'),
+    Convert("answer-string",    Question="1:canberra"),
+    Convert("breadcrumbs"),
+    Convert("breadcrumbs",      page_out="breadcrumbs-dropdown", js='toggle_quizindex_menu();'),
     Convert("choice-multiple"),
     Convert("choice-single"),
+    Convert("ctanLion"),
     Convert("discussion"),
-    Convert("discussion-ref"),
     Convert("discussion-Qref"),
+    Convert("discussion-ref"),
     Convert("display-as-image", question='1:2'),
     Convert("french",           question='1:1'),
-    Convert("index-en"),
     Convert("index-cz"),
-    Convert("ctanLion"),
+    Convert("index-en"),
     Convert("montypython"),
     Convert("nounits"),
     Convert("onepage",          Question="1:3"),
     Convert("pst2pdf",          width=800),
-    Convert("pstricks-ex"),
+    Convert("pstricks-ex",      delay=3000),
     Convert("quiz-page",        question="1:4|1:5|3:3|2:3"),
     Convert("random",           js="questionOrder=[0,4,3,2,1];", Question='1:1:', js_end="gotoQuestion(4);checkAnswer(1);"),
     Convert("simple",           page_out='simple-html', question='1:1'),
     Convert("simple",           src='pdf',  page_out='simple-pdf'),
-    Convert("theme-*",          width=800, question="1:1,7|3:1|3:1,7|6:4", js_end='toggle_quizindex_menu();'),
+    Convert("theme-default",    page_out="quizindex-dropdown", js='toggle_quizindex_menu();'),
+    Convert("theme-*",          width=800, question="1:1,7|3:1|3:1,7|6:4", js_end='toggle_quizindex_menu();', delay=3000),
     Convert("tikz-ex"),
     Convert("timed"),
 ]
@@ -345,4 +389,4 @@ if __name__ == '__main__':
 
     # save the possibly updated image hashes
     with open(image_hash_file,'w') as json_file:
-        json.dump(good_image_hashes, json_file, ensure_ascii=False, indent=2)
+        json.dump(webquiz_image_hashes, json_file, ensure_ascii=False, indent=2, sort_keys=True)

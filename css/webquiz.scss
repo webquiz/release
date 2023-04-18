@@ -286,6 +286,7 @@ div.quiz-questions {
             font-size: large;
             font-family: Verdana, Arial, Helvetica, sans-serif;
             font-weight: bold;
+            text-align: center;
             margin-bottom: 0.8ex;
             min-width: 50%;
         }
@@ -333,9 +334,10 @@ div.quiz-questions {
         }
     }
 
-
     /* specifications for the divs containing questions, answers and feedback */
     div.question {
+        padding-right: 1%;
+        width: 80%;
         position: relative;
         margin: 0 0 5px 0;
         display: none;
@@ -361,12 +363,15 @@ div.quiz-questions {
         }
         table.question-choices td:nth-child(3n+1) { padding-right: 6px; }
         td.brown { color: $QuestionPart; }
+        div.answer {
+            padding-top: 1ex;
+        }
         div.feedback {
             background-color: $FeedbackBG;
             border: solid $FeedbackBorder 2px;
             border-radius: 5px;
             display: none;
-            padding: 0 1ex 0 1ex;
+            padding: 0ex 1ex 0 1ex;
             transition: height 0.66s ease-out;
 
             div {

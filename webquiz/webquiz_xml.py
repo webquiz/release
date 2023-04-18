@@ -112,6 +112,7 @@ class QuizHandler(xml.sax.ContentHandler):
         '''
         if value.strip() == 'DeFaUlT':
             setattr(self, key, self.defaults[key])
+
         else:
             if key in ['language', 'theme']: # lower case
                 setattr(self, key, value.lower())
@@ -121,6 +122,7 @@ class QuizHandler(xml.sax.ContentHandler):
                 setattr(self, key, value.lower()=='true')
             else:                           # a string
                 setattr(self, key, value)
+
         self.webquiz_debug('Just set "{}" equal to "{}" from "{}"'.format(key, getattr(self, key), value))
 
     #---- start of start elements --------------------------------------------
@@ -129,7 +131,7 @@ class QuizHandler(xml.sax.ContentHandler):
             At the start of each webquiz xml tag we need to pull out the
             attributes and place
         '''
-        self.webquiz_debug('Starting tag for '+tag)
+        # self.webquiz_debug('Starting tag for '+tag)
         self.current_tags.append(tag)
 
         if hasattr(self, 'start_'+tag):
@@ -272,7 +274,7 @@ class QuizHandler(xml.sax.ContentHandler):
     #---- end of start elements ---------------------------------------------
 
     def endElement(self, tag):
-        self.webquiz_debug('ending tag for {} (should be {})'.format(tag, self.current_tags[-1])) 
+        # self.webquiz_debug('ending tag for {} (should be {})'.format(tag, self.current_tags[-1])) 
 
         reset_text = True
         if hasattr(self, 'end_'+tag):

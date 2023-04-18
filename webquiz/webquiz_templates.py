@@ -29,26 +29,21 @@ html_meta = r'''<meta http-equiv="Content-Type" content="text/html; charset=utf-
   <meta name="keywords" content="WebQuiz, TeX4ht, make4ht, latex, python, quiz, mathematics">
   <link href="{webquiz_url}/css/webquiz-{theme}.css" type="text/css" rel="stylesheet">
   <link href="{quiz_name}/{quiz_name}.css" type="text/css" rel="stylesheet">
+  <script src="{webquiz_url}/javascript/webquiz.js"></script>
   <script src="{mathjax}?config=MML_CHTML"></script>
 '''
 
 # javascript for setting up the questions
 mathjs=r'  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/5.4.0/math.min.js"></script>'
 
-webquiz_init = r'''<div style="display: none;">
-    <script>
-      var webquiz = document.createElement('script');
-      webquiz.src = "{webquiz_url}/javascript/webquiz.js"
-      webquiz.type = 'text/plain'
-      document.head.appendChild(webquiz)
-      webquiz.addEventListener('load', () => {{
-        WebQuizInit(1, 0, 'simple')
-        var index =  document.createElement('script');
-        index.src = 'quizindex.js'
-        document.head.appendChild(index)
-      }})
-   </script>
-  </div>'''
+webquiz_init = r'''<script defer>
+  var index =  document.createElement('script');
+  index.src = 'quizindex.js'
+  index.type = "application/javascript";
+  document.head.appendChild(index);
+  WebQuizInit({number_questions}, {number_discussions}, '{quiz_name}');
+</script>
+'''
 
 # Bread crumbs including a drop down menu for all of the quizzes for the unit.
 # The drop-down-menu is added by create_quizindex_menu() in webquiz.js

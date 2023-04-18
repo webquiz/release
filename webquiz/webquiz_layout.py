@@ -38,7 +38,7 @@ from webquiz_templates import no_script
 #   quiz.unit_name      = unit name from \UnitName
 #   quiz.unit_url       = unit url from \UnitURL
 #   quiz.webquiz_init   = javascript for initialising quiz page this MUST appear towards the
-#                         end of HTML body
+#                         end of the HTML body
 
 def write_web_page(quiz):
   return quiz_page.format(
@@ -50,7 +50,7 @@ def write_web_page(quiz):
     quiz_questions=quiz.quiz_questions,# html for quiz
     side_menu=quiz.side_menu,          # navigation menu for quiz
     title=quiz.quiz.title,             # page title
-    webquiz_init=quiz.webquiz_init     # parting javascript callsWebQuizInt
+    webquiz_init=quiz.webquiz_init     # initialising webquiz javascript by calling WebQuizInt
   )
 
 
