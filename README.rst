@@ -1,3 +1,7 @@
+|version|
+|pyversion|
+|GPL3|
+
 ========
 WebQuiz_
 ========
@@ -243,3 +247,7 @@ Public License for more details.
 .. _sass:       https://sass-lang.com/
 .. _uglifyjs:   https://www.npmjs.com/package/uglify-js
 .. _webkit2png: http://www.paulhammond.org/webkit2png/
+.. |version| image:: https://img.shields.io/github/v/tag/AndrewAtLarge/gitcat?color=success&label=version
+.. |pyversion| image:: https://img.shields.io/badge/requires-python3.9%2B-important
+.. |GPL3| image:: https://img.shields.io/badge/license-GPLv3-blueviolet.svg
+   :target: https://www.gnu.org/licenses/gpl-3.0.en.html
