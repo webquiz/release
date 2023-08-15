@@ -180,6 +180,41 @@ class Convert:
         else:
             print(f'{page.page_out} is up to date')
 
+    def pyppeteer (self):
+        '''
+        TODO
+
+        Extract and trim and image using webquiz, wkhtmltoimage and mogrify.
+        Necessary since webkit2png is no oonger supported and has not been
+        ported to python3. On the plus side, we can mprotant the module and
+        call directly without using subprocess.
+
+        The full list of options can be found at
+        https://wkhtmltopdf.org/usage/wkhtmltopdf.txt
+        '''
+        cmd =  f'shot-scraper  "{examplesURL}/{self.page}.html" -o "{self.page_out}.png"'
+        if self.js:
+            # wrap the javascript in a promise
+            cmd += f' --javascript "new Promise(takeShot=>{{ {self.js}; setTimeout(()=>{{ takeShot(); }},1500); }})"'
+
+        if self.delay:
+            cmd += f' --wait {self.delay}'
+
+        if self.width:
+            cmd += f' --width {self.width}'
+
+
+        if webkit2png_mode == '--debug':
+            print(f'{cmd=}')
+
+        # run wkhtmltoimage on the webquiz file
+        run(cmd)
+
+        if os.path.exists(f'{self.page_out}.png'): # remove png file if it already exists
+            run(f'mogrify -trim -gravity center {self.page_out}.png')
+        else:
+            print(f'makeimages error: shot-scraper failed because {self.page_out}.png does not exist')
+
     def shot_scraper(self):
         '''
         Extract and trim and image using webquiz, wkhtmltoimage and mogrify.

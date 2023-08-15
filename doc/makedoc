@@ -8,11 +8,12 @@
 
 # usage: makedoc --[fast|quiet] --[all|check-examples|examples|languages|man-page|online|themes|usage]
 
-# TODO: rewrite in python to make cross-platform and merge with makeimages
+# TODO: rewrite in python to make cross-platform and merge with makeimages.py
 
 #################################################
 WebQuizDir="$(realpath $(dirname $0)/..)"
 WebQuizExamplesDir="$WebQuizDir/doc/examples"
+MAKEIMAGES=./makeimages.py
 PREFIX=""
 
 #################################################
@@ -67,9 +68,9 @@ function make_examples() {
   fi
   /bin/rm -f *.png
   if [[ "$fast" == false ]]; then
-    ./makeimages -f $q
+    $MAKEIMAGES -f $q
   else
-    ./makeimages $q
+    $MAKEIMAGES $q
   fi
 }
 
@@ -130,7 +131,8 @@ function make_themes () {
 
   if [[ "$makeall" = false ]]; then
     message "Generating theme screenshots for inclusion in manual"
-    $WebQuizExamplesDir/makeimages theme
+    cd $WebQuizExamplesDir
+    $MAKEIMAGES theme
   fi
 
   message "Generating list of themes for the manual"
