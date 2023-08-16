@@ -31,6 +31,7 @@ suite.
 REQUIRES:
     - brew install --cask wkhtmltopdf
     - pip install imagehash
+    - pip install playwright && playwright install
 '''
 
 import argparse
