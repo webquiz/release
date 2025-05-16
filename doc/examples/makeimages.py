@@ -1,4 +1,11 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.10"
+# dependencies = [
+#    "imagehash",
+#    "pyppeteer"
+# ]
+# ///
 
 r'''
 -----------------------------------------------------------------------------
@@ -21,7 +28,7 @@ webquiz manual. We first use
     - webkit2png to extract an image of the web page, sometimes with options
     - mogrify to trim the image down to size
 Alternatively, it is possible to extract a png image of the PDF file created by
-webquiz.  For the full extraction specifications see the pages array below
+wbquiz.  For the full extraction specifications see the pages array below
 
 As an added bonus, we use imagehash to store hashes for each of the extracted
 image in the file webquiz_image_hashes and we flag if any image changes
@@ -47,11 +54,39 @@ import time
 
 from PIL import Image
 
+import asyncio
+from pyppeteer import launch
+
+# ----------------------------------------------------------------------
 # location of the webquiz example web pages on a development server
 examplesURL = "http://localhost/WebQuiz/doc/examples"
 examplesDIR = os.path.join(os.environ['HOME'], 'Code/WebQuiz/doc/examples')
 os.chdir(examplesDIR)
 
+# ----------------------------------------------------------------------
+# pyppeteer code to scrape web page image
+async def pyppeteer(page_url, filename, js=None, width=800, delay=0):
+    browser = await launch(headless=True)
+    page = await browser.newPage()
+
+    print(f' - opening {examplesURL}/{page_url} with {js=}, {delay=}')
+    await page.setViewport({'width': width, 'height': 800})
+    await page.goto(f'{examplesURL}/{page_url}.html', {'waitUntil': 'networkidle2'})
+
+    if delay:
+        print(f' - delaying {delay=}')
+        await asyncio.sleep(delay/1000)
+
+    if js:
+        print(f' - sending {js=}')
+        content = await page.evaluate(js, force_expr=True)
+        print(f' - found: {content=}')
+        # f''' () => new Promise(resolve => {{ {js} setTimeout(resolve, 1500); }}) ''')
+
+    await page.screenshot({'path': filename+'.png'})
+    await browser.close()
+
+# ----------------------------------------------------------------------
 # lambda function for running shell commands: run( command )
 run  = lambda cmd: subprocess.call(cmd, shell=True)
 
@@ -123,7 +158,7 @@ class Convert:
 
     def __call__(self, options):
         r'''
-            Expand any glob patterms and then pass to write_image to
+            Expand any glob patterns and then pass to write_image to
             generate the images and clean up
         '''
         self.options = options
@@ -136,7 +171,7 @@ class Convert:
 
     # dictionary of conversion methods used in self.wrie_image()
     convert = dict(
-        html = 'shot_scraper',
+        html = 'pyppeteer',
         pdf  = 'pdf2png',
         ps   = 'ps2png'
     )
@@ -150,7 +185,7 @@ class Convert:
         '''
         global webquiz_image_hashes
         if self.options.force or self.modified():
-            print(f'\nExtracting image file {self.page_out}...')
+            print(f'\nExtracting image file {self.page} to {self.page_out}...')
             if os.path.exists(self.page_out+'.png'):
                 # remove pg file if it already exists
                 os.remove(self.page_out+'.png')
@@ -160,7 +195,11 @@ class Convert:
                 if not self.options.fast:
                     run(f'webquiz {self.webquiz} {webquiz_mode} {self.page}')
 
-                getattr(self, self.convert[self.src])()
+                # convert the web page
+                convert = getattr(self, self.convert[self.src])
+                print(f'converting: src={self.src}, con={self.convert[self.src]}: {convert}')
+                convert()
+
                 # if the image file exists compare with the saved image hash
                 if os.path.isfile(f'{self.page_out}.png'):
                     new_hash = imagehash.colorhash(Image.open(f'{self.page_out}.png'), binbits=3)
@@ -186,40 +225,23 @@ class Convert:
         TODO
 
         Extract and trim and image using webquiz, wkhtmltoimage and mogrify.
-        Necessary since webkit2png is no oonger supported and has not been
-        ported to python3. On the plus side, we can mprotant the module and
+        Necessary since webkit2png is no longer supported and has not been
+        ported to python3. On the plus side, we can import the module and
         call directly without using subprocess.
 
         The full list of options can be found at
         https://wkhtmltopdf.org/usage/wkhtmltopdf.txt
         '''
-        cmd =  f'shot-scraper  "{examplesURL}/{self.page}.html" -o "{self.page_out}.png"'
-        if self.js:
-            # wrap the javascript in a promise
-            cmd += f' --javascript "new Promise(takeShot=>{{ {self.js}; setTimeout(()=>{{ takeShot(); }},1500); }})"'
-
-        if self.delay:
-            cmd += f' --wait {self.delay}'
-
-        if self.width:
-            cmd += f' --width {self.width}'
-
-
-        if webkit2png_mode == '--debug':
-            print(f'{cmd=}')
-
-        # run wkhtmltoimage on the webquiz file
-        run(cmd)
-
-        if os.path.exists(f'{self.page_out}.png'): # remove png file if it already exists
-            run(f'mogrify -trim -gravity center {self.page_out}.png')
-        else:
-            print(f'makeimages error: shot-scraper failed because {self.page_out}.png does not exist')
+        print('Opening pyppeteer browser...')
+        asyncio.run( pyppeteer(self.page, self.page_out, self.js, self.width, self.delay) )
+        #asyncio.get_event_loop().run_until_complete(
+        #    pyppeteer(self.page, self.page_out, self.js, self.width, self.delay)
+        #)
 
     def shot_scraper(self):
         '''
         Extract and trim and image using webquiz, wkhtmltoimage and mogrify.
-        Necessary since webkit2png is no oonger supported and has not been
+        Necessary since webkit2png is no longer supported and has not been
         ported to python3. On the plus side, we can mprotant the module and
         call directly without using subprocess.
 
