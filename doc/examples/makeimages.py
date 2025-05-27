@@ -3,7 +3,7 @@
 # requires-python = ">=3.10"
 # dependencies = [
 #    "imagehash",
-#    "pyppeteer"
+#    "selenium"
 # ]
 # ///
 
@@ -54,37 +54,15 @@ import time
 
 from PIL import Image
 
-import asyncio
-from pyppeteer import launch
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+
 
 # ----------------------------------------------------------------------
 # location of the webquiz example web pages on a development server
 examplesURL = "http://localhost/WebQuiz/doc/examples"
 examplesDIR = os.path.join(os.environ['HOME'], 'Code/WebQuiz/doc/examples')
 os.chdir(examplesDIR)
-
-# ----------------------------------------------------------------------
-# pyppeteer code to scrape web page image
-async def pyppeteer(page_url, filename, js=None, width=800, delay=0):
-    browser = await launch(headless=True)
-    page = await browser.newPage()
-
-    print(f' - opening {examplesURL}/{page_url} with {js=}, {delay=}')
-    await page.setViewport({'width': width, 'height': 800})
-    await page.goto(f'{examplesURL}/{page_url}.html', {'waitUntil': 'networkidle2'})
-
-    if delay:
-        print(f' - delaying {delay=}')
-        await asyncio.sleep(delay/1000)
-
-    if js:
-        print(f' - sending {js=}')
-        content = await page.evaluate(js, force_expr=True)
-        print(f' - found: {content=}')
-        # f''' () => new Promise(resolve => {{ {js} setTimeout(resolve, 1500); }}) ''')
-
-    await page.screenshot({'path': filename+'.png'})
-    await browser.close()
 
 # ----------------------------------------------------------------------
 # lambda function for running shell commands: run( command )
@@ -171,7 +149,7 @@ class Convert:
 
     # dictionary of conversion methods used in self.wrie_image()
     convert = dict(
-        html = 'pyppeteer',
+        html = 'selenium',
         pdf  = 'pdf2png',
         ps   = 'ps2png'
     )
@@ -220,23 +198,22 @@ class Convert:
         else:
             print(f'{page.page_out} is up to date')
 
-    def pyppeteer (self):
+    def selenium(self):
         '''
-        TODO
-
-        Extract and trim and image using webquiz, wkhtmltoimage and mogrify.
-        Necessary since webkit2png is no longer supported and has not been
-        ported to python3. On the plus side, we can import the module and
-        call directly without using subprocess.
-
-        The full list of options can be found at
-        https://wkhtmltopdf.org/usage/wkhtmltopdf.txt
+        Use selenium to take screenshot
         '''
-        print('Opening pyppeteer browser...')
-        asyncio.run( pyppeteer(self.page, self.page_out, self.js, self.width, self.delay) )
-        #asyncio.get_event_loop().run_until_complete(
-        #    pyppeteer(self.page, self.page_out, self.js, self.width, self.delay)
-        #)
+        print(f'Scraping {self.page}')
+        chrome.set_window_size(self.width, self.width)
+        # load the web page
+        chrome.get(f'{examplesURL}/{self.page}.html')
+        time.sleep(2) # wait for page to load
+        if self.js:
+            print(f' - executing javascript: {self.js}')
+            out = chrome.execute_script(self.js)
+            print(f'{out=}')
+            time.sleep(self.delay) # wait for javascript to execute
+
+        chome.save_screenshot(self.page_out)
 
     def shot_scraper(self):
         '''
@@ -423,6 +400,13 @@ if __name__ == '__main__':
                 print(page.page_out)
         sys.exit()
 
+    # ----------------------------------------------------------------------
+    # start chrome browser 
+    chrome_options = Options()
+    chrome_options.add_argument("--headless")  # Run in headless mode
+    chrome_options.add_argument("--window-size=1920x1080")  # Set window size
+    chrome = webdriver.Chrome(options=chrome_options)
+
     # By default all images are generated unless one or more output
     # image file names are given on the command line. The is_good_page
     # lambda function determines whether an image should be generated
@@ -444,6 +428,8 @@ if __name__ == '__main__':
     for page in sorted(pages, key=lambda p: p.page_out):
         if is_good_page(page):
             page(args)
+
+    chrome.quit()
 
     # save the possibly updated image hashes
     with open(image_hash_file,'w') as json_file:
