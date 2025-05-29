@@ -55,6 +55,7 @@ import time
 from PIL import Image
 
 from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 
 
@@ -405,7 +406,8 @@ if __name__ == '__main__':
     chrome_options = Options()
     chrome_options.add_argument("--headless")  # Run in headless mode
     chrome_options.add_argument("--window-size=1920x1080")  # Set window size
-    chrome = webdriver.Chrome(options=chrome_options)
+    service = Service('/opt/homebrew/bin/chromedriver')
+    chrome = webdriver.Chrome(service=service, options=chrome_options)
 
     # By default all images are generated unless one or more output
     # image file names are given on the command line. The is_good_page
