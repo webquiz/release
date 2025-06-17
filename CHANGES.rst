@@ -9,7 +9,7 @@ Version 6.0:
     - changed github repository to https://github.com/webquiz/release to give
       better URLs for accessing the javascript and css files via a CDN
 
-    - added diagnotics command-line option for biug reports
+    - added diagnotics command-line option for bug reports
     - added timed quizzes
 
 

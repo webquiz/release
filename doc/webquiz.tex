@@ -361,7 +361,8 @@
       provides a number of different colour schemes (see
       \autoref{SS:commandline} and \hyperref[SS:themes]{Appendix A}).
 
-      \WebQuiz quizzes are not timed and they do not have time-limits.
+      By default, \WebQuiz quizzes are not timed, however, a time-limit
+      can be imposed using the \LaTeXCode|timed| document class option.
 
       Quizzes made using \WebQuiz are intended to be used as a
       revision resource rather than as an assessment tool. In particular,
@@ -1279,7 +1280,7 @@
     The \WebQuiz document class supports the following options:
     \begin{latexcode}
       fixedorder, hidesidemenu, language, onepage, pst2pdf,
-      separatepages, showsidemenu, theme, tikz
+      separatepages, showsidemenu, theme, timed, tikz
     \end{latexcode}
     This section describes all of these document-class options except for
     \ctan{tikz} and \ctan{pst2pdf}, which are discussed in
@@ -1417,6 +1418,17 @@
     \InputLatexCode{onepage}
     produces the quiz page:
     \ScreenShot{A one page quiz}{onepage}
+
+    \item[timed]\CrossIndex{document class options}{timed}
+    Use \LaTeXCode|timed=X| to set a maximum time limit in
+    \textit{minutes} for completing the quiz. In practice, it is not
+    clear how useful this feature is because the user may be able to
+    reset the time through their browser.
+
+    \InputLatexCode{timed}
+    produces
+    \ScreenShot{Randomly ordered questions}{timed}
+
 
     \item[theme]\CrossIndex{document class options}{theme}
 

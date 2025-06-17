@@ -97,7 +97,7 @@ function make_man_page() {
   sed 's@\[SETTINGS\]$@<SETTINGS>@' webquiz.usage >> README.rst
   cat README-bottom >> README.rst
   message "Making manual file"
-  rst2man.py README.rst webquiz.1
+  pandoc -s README.rst -t man -o webquiz.1
 }
 
 #################################################
@@ -121,7 +121,7 @@ function make_themes () {
   # next generate code to include screenshots for each theme in the appendix
   cd $WebQuizDir/css
   for theme in webquiz-*.scss ; do
-      sass --style compressed $theme ${theme/scss/css}
+      sass -E "UTF-8" --style compressed $theme ${theme/scss/css}
       name=$(echo $theme | sed 's/webquiz-\([a-z]*\).scss/\1/')
       if [ ! -e "$WebQuizExamplesDir/theme-$name.tex" ]; then
         # create theme-<theme>.tex if it does not already exist
@@ -162,7 +162,25 @@ function make_online_manual() {
 
 #################################################
 function usage() {
-  message "$(basename $0) --[fast|quiet] --[all|check-examples|examples|languages|man-page|online|themes|usage]"
+  cat << EndOfUsage
+$(basename $0) --[fast|quiet] --[all|check-examples|examples|languages|man-page|online|themes|usage]
+
+  Build the PDF file for the WebQuix manual
+
+  OPTIONS:
+
+  -a --all             Build everything, which is the default if no arguments are given
+  -c --check-examples  Open a threeway diff to check for unused images
+  -e --examples        Regenerate all of the example images in the example directory
+  -f --fast            Build only the PDF file, and not the online manual
+  -l --langauges       Check the list of supported languages
+  -m --man-page        Make the unix manual page
+  -o --online-manual   Make the PDF file for the online manual
+  -q --quiet           Do not print messages
+  -s --settings        Generate the default webquiz settings file
+  -t --theme           Generate the webquiz theme files using sass
+  -u --usage           Generate file that shows the webquiz command-line options
+EndOfUsage
 }
 
 makeall=false

@@ -29,6 +29,17 @@ import zipfile
 from setuptools import setup, find_packages, Command
 from webquiz.webquiz_util import kpsewhich, MetaData
 
+
+external_programs = [
+  'gsed,',
+  'mogrify_,',
+  'pandoc_,',
+  'sass_,',
+  'uglifyjs_',
+  'and',
+  'uv_',
+]
+
 if sys.version_info.major<3:
     print('Aborting! Setup requires python3')
     sys.exit(1)
@@ -114,6 +125,7 @@ class WebQuizDevelop(Command):
             else:
                 os.symlink(os.path.join(cwd,'webquiz','webquiz.py'), webquiz)
 
+            print(f'You still need to install: {", ".join(f"{p}" for p in external_programs)}\n')
             print('To build the WebQuiz css files run the bash script doc/makedoc -t')
             print('To build the WebQuiz documentation run the bash script doc/makedoc --all')
 

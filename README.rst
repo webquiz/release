@@ -11,6 +11,9 @@ WebQuiz_
 *as a standard* LaTeX_ *package by downloading and installing the* WebQuiz_
 *package from* ctan_.
 
+This README file explains how the different components of the development
+version of WebQuiz_ are organised.
+
 WebQuiz_ makes it possible to use LaTeX_ to write interactive web based
 quizzes. The quizzes are first written in LaTeX_ and then converted into
 HTML files using WebQuiz_, which is written in Python3_. The conversion
@@ -25,14 +28,25 @@ WebQuiz_ has the following components:
  - rudimentary tests
 
 WebQuiz_ relies on having the following programs installed:  Python3_ and
-LaTeX_ (including TeX4ht_, make4ht_ and kpsewhich_, which are are all available
-with most LaTeX_ distributions such as TeXLive_). To use the development
+LaTeX_ (including TeX4ht_, make4ht_, ctanupload_, and kpsewhich_, which are are standard
+components of LaTeX_ distributions such as TeXLive_). To use the development
 version, particularly, for building the manual and uploading to ctan_, you will
-also need mogrify_, sass_, uglifyjs_ and webkit2png_ (and ctanupload_ and
-rst2man_).
+also need
+gsed,
+mogrify_,
+pandoc_,
+sass_,
+uglifyjs_
+and
+uv_
+.  On a mac, these dependencies can be installed with::
 
-This README file explains how the different components of the development
-version of WebQuiz_ are organised.
+    > brew install gsed imagemagick pandoc uv
+    > pnpm install -g uglify sass
+
+The `makeimages` script has several python depencies, however, uv_
+automatically install these in a virtual environment the first time that the
+script is run.
 
 Installing the development version
 ----------------------------------
@@ -85,7 +99,7 @@ webquiz_xml.py
 
 LaTeX code
 ----------
-The LaTeX is in the latex directory. The main components are:
+The WebQuiz_ LaTeX_ code is in the latex directory. The main components are:
 
 webquiz.cfg
     WebQuiz_ TeX4ht configuration file => generates XML
@@ -143,7 +157,7 @@ using the `bash` shell-script::
     > doc/makedoc
 
 This generates the WebQuiz_ `CSS` files and all of the screen shots in the
-manual. It requires webkit2png_ and mogrify_.
+manual. It requires mogrify_.
 
 The main files in the documentation directory are:
 
@@ -166,7 +180,7 @@ examples
 
 examples/makeimages
     python script for generating the images used in the manual. Requires
-    webkit2png_ and mogrify_. As with `makedoc`, `makeimages -h` prints a
+    mogrify_. As with `makedoc`, `makeimages -h` prints a
     summary of the command-line options
 
 examples/\*.tex
@@ -244,14 +258,13 @@ Public License for more details.
 .. _kpsewhich:  https://linux.die.net/man/1/kpsewhich
 .. _make4ht:    https://ctan.org/pkg/make4ht
 .. _mogrify:    https://imagemagick.org/script/mogrify.php
-.. _rst2man:    http://docutils.sourceforge.net/sandbox/manpage-writer/rst2man.txt
+.. _pandoc:     https://pandoc.org/
 .. _sass:       https://sass-lang.com/
 .. _uglifyjs:   https://www.npmjs.com/package/uglify-js
-.. _webkit2png: http://www.paulhammond.org/webkit2png/
+.. _uv:         https://astral.sh/blog/uv
 .. |version| image:: https://img.shields.io/github/v/tag/webquiz/release?color=success&label=version
 .. |release date| image:: https://img.shields.io/github/release-date/webquiz/release?color=yellow
 .. |pyversion| image:: https://img.shields.io/badge/requires-python3.7%2B-important
-.. |ctanBadge| image:: https://img.shields.io/badge/ctan-WebQuiz-informational
-   :target: https://www.ctan.org/pkg/webquiz
+.. |ctanBadge| image:: https://img.shields.io/ctan/v/webquiz?color=blue&link=https://ctan.org/pkg/webquiz :target: https://www.ctan.org/pkg/webquiz
 .. |GPL3| image:: https://img.shields.io/badge/license-GPLv3-blueviolet.svg
    :target: https://www.gnu.org/licenses/gpl-3.0.en.html

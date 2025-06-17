@@ -3,7 +3,8 @@
 # requires-python = ">=3.10"
 # dependencies = [
 #    "imagehash",
-#    "selenium"
+#    "selenium",
+#    "webdriver_manager",
 # ]
 # ///
 
@@ -57,7 +58,7 @@ from PIL import Image
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
-
+from webdriver_manager.chrome import ChromeDriverManager
 
 # ----------------------------------------------------------------------
 # location of the webquiz example web pages on a development server
@@ -103,11 +104,12 @@ class Convert:
             js_end = '',
             page = page,
             page_out = page,
+            quiet = False,
             Question = None,
             question = None,
             src = 'html',
             webquiz = '',
-            width =500,
+            width =700,
         )
         for key in defaults:
             if key in args:
@@ -155,6 +157,13 @@ class Convert:
         ps   = 'ps2png'
     )
 
+    def print(self, msg):
+        '''
+        Print `msg` unless we are being quiet!
+        '''
+        if not self.quiet:
+            print(msg)
+
     def write_image(self):
         r'''
           Convert self.page to self.page_out.
@@ -164,7 +173,7 @@ class Convert:
         '''
         global webquiz_image_hashes
         if self.options.force or self.modified():
-            print(f'\nExtracting image file {self.page} to {self.page_out}...')
+            self.print(f'\nExtracting image file {self.page} to examples/{self.page_out}.png ...')
             if os.path.exists(self.page_out+'.png'):
                 # remove pg file if it already exists
                 os.remove(self.page_out+'.png')
@@ -176,7 +185,6 @@ class Convert:
 
                 # convert the web page
                 convert = getattr(self, self.convert[self.src])
-                print(f'converting: src={self.src}, con={self.convert[self.src]}: {convert}')
                 convert()
 
                 # if the image file exists compare with the saved image hash
@@ -197,30 +205,31 @@ class Convert:
                         os.remove(file)
 
         else:
-            print(f'{page.page_out} is up to date')
+            self.print(f'{page.page_out} is up to date')
 
     def selenium(self):
         '''
         Use selenium to take screenshot
         '''
-        print(f'Scraping {self.page}')
-        chrome.set_window_size(self.width, self.width)
+        if self.width:
+            chrome.set_window_size(self.width, self.width)
+
         # load the web page
         chrome.get(f'{examplesURL}/{self.page}.html')
-        time.sleep(2) # wait for page to load
+        time.sleep(1) # wait for page to load
         if self.js:
-            print(f' - executing javascript: {self.js}')
             out = chrome.execute_script(self.js)
-            print(f'{out=}')
-            time.sleep(self.delay) # wait for javascript to execute
+            time.sleep(self.delay/1000) # wait for javascript to execute
 
-        chome.save_screenshot(self.page_out)
+        self.print(f' - saving screenshot to {self.page_out}')
+        chrome.save_screenshot(f'{self.page_out}.png')
+        run(f'mogrify -trim -gravity center {self.page_out}.png')
 
     def shot_scraper(self):
         '''
         Extract and trim and image using webquiz, wkhtmltoimage and mogrify.
         Necessary since webkit2png is no longer supported and has not been
-        ported to python3. On the plus side, we can mprotant the module and
+        ported to python3. On the plus side, we can import the module and
         call directly without using subprocess.
 
         The full list of options can be found at
@@ -405,9 +414,10 @@ if __name__ == '__main__':
     # start chrome browser 
     chrome_options = Options()
     chrome_options.add_argument("--headless")  # Run in headless mode
+    chrome_options.add_argument("--disable-gpu")
     chrome_options.add_argument("--window-size=1920x1080")  # Set window size
     service = Service('/opt/homebrew/bin/chromedriver')
-    chrome = webdriver.Chrome(service=service, options=chrome_options)
+    chrome = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
 
     # By default all images are generated unless one or more output
     # image file names are given on the command line. The is_good_page
