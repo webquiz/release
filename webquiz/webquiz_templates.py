@@ -37,29 +37,30 @@ html_meta = r'''<meta http-equiv="Content-Type" content="text/html; charset=utf-
 # javascript for setting up the questions
 mathjs=r'  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/5.4.0/math.min.js"></script>'
 
-webquiz_init = r'''<script defer>
+webquiz_init = r'''<script type="module">
   var index =  document.createElement('script');
   index.src = 'quizindex.js'
   index.type = "application/javascript";
   document.head.appendChild(index);
-  WebQuizInit({number_questions}, {number_discussions}, '{quiz_name}');
+  webQuizInit({number_questions}, {number_discussions}, '{quiz_name}');
 </script>
 '''
 
 # Bread crumbs including a drop down menu for all of the quizzes for the unit.
-# The drop-down-menu is added by create_quizindex_menu() in webquiz.js
+# The drop-down-menu is added by createQuizIndexMenu() in webquiz.js
 breadcrumb_line_text = '            <li>{text}</li>\n'
 breadcrumb_line_url  = '            <li><a href="{url}">{text}</a></li>\n'
 breadcrumb_quizindex  = r'''              <li><a href="{quizzes_url}">{quizzes}</a>
-                  <span onclick="toggle_quizindex_menu();" id="quizzes-menu-icon"></span>
-                  <ul id="quizindex-menu" onclick="toggle_quizindex_menu();"></ul>
+                  <span onclick="toggleQuizIndexMenu();" id="quizzes-menu-icon"></span>
+                  <ul id="quiz-index-menu" onclick="toggleQuizIndexMenu();"></ul>
               </li>
 '''
-create_quizindex_menu = r'''// construct the drop down menu if QuizTitles has some entries
-if (QuizTitles.length > 0 && quizindex_menu) {
-    create_quizindex_menu();
+create_quiz_index_menu = r'''// construct the drop down menu if QuizTitles has some entries
+if (QuizTitles.length > 0 && quizIndexMenu) {
+    createQuizIndexMenu();
 }
 '''
+
 breadcrumbs = r'''<div class="breadcrumbs">
     <nav>
         <div class="navleft">
@@ -76,9 +77,9 @@ breadcrumbs = r'''<div class="breadcrumbs">
 # trickiest bit is finding the current list of supported themes.
 theme_menu=r'''
         <div class="navright" >
-            <span onclick="toggle_theme_menu();">Theme &#9881;</span>
+            <span onclick="toggleThemeMenu();">Theme &#9881;</span>
             <ul><li>
-                <ul id="theme-menu" onclick="toggle_theme_menu();">
+                <ul id="theme-menu" onclick="toggleThemeMenu();">
                   <li>one</li><li>two</li>
                 </ul>
               </li>
@@ -90,11 +91,11 @@ theme_menu=r'''
 button = r'        <div id="button{b}" class="button {cls}" content=" " onClick="gotoQuestion({b})">{b}</div>'
 discuss = r'        <li id="button-{b}" class="discussion" onClick="gotoQuestion(-{b})">{title}</li>'
 side_menu = r'''<div id="menu-icon">
-      <span id="sidelabelclosed" class="question-label" onclick="toggle_side_menu();">&#10070;</span>
-      <span id="sidelabelopen" class="question-label" onclick="toggle_side_menu();">&#10006;&nbsp;{side_questions}
+      <span id="side-label-closed" class="question-label" onclick="toggleSideMenu();">&#10070;</span>
+      <span id="side-label-open" class="question-label" onclick="toggleSideMenu();">&#10006;&nbsp;{side_questions}
       </span>
     </div>
-    <div id="sidemenu" class="side-menu">{discussion_list}{question_buttons}
+    <div id="side-menu" class="side-menu">{discussion_list}{question_buttons}
       <div class="school">
         {department}<br>
         {institution}
@@ -111,20 +112,44 @@ question_buttons = r'''
       <div class="buttons">
         <br>{buttons}
       </div>
-      <table class="marking-key">
+'''
+
+# Add an input field for the student ID and a start button, to start the
+# quiz.
+starting_page = '''
+  <div id="starting-page" >
+     <form onSubmit="return startQuiz('{your_name}');">
+        {student_id} <input type="text"   size="30">
+     <div class="start-button"><input type="submit" value="{start_quiz}"  title="{start_quiz}" name="next"></div>
+     </form>
+  </div>
+'''
+
+marking_key = '''
+      <table id="marking-key">
          <tr><td class="star">&starf;</td><td style="width: 14ex;">{side_menu_star}</td></tr>
          <tr><td class="tick">&check;</td><td>{side_menu_tick}</td></tr>
          <tr><td class="cross">&cross;</td><td>{side_menu_cross}</td></tr>
-      </table>'''
+      </table>
+'''
 
 # quiz title and navigation arrows
 quiz_header = r'''<div class="quiz-header">
+       {quiztimer}
        <div class="quiz-title">
          {title}
-         <span id="quiz-timer"></span>
        </div>
-       <div></div>{arrows}
+       {arrows}
       </div>'''
+
+# show quiz time remaining
+quiz_timer = '''<div id="quiz-timer-submit">
+         <div class="quiz-timer">{time_remaining}<span id="quiz-timer"></span></div>
+         <div id="submit-button" style="display:none;">
+            <input type="button" value="{submit}" class="submit-button" title="{submit}" name="next" onClick="submitQuiz(\'{more_time}\');"/>
+         </div>
+       </div>'''
+
 navigation_arrows = r'''
        <span id="question-label" class="question-label">{question}</span>
        <span id="question-number" class="question-label">{question_number}</span>
@@ -161,22 +186,23 @@ question_text = r'''  {question_text}
       <form id="Q{qnum}Form" onSubmit="return false;">
         {question_options}
         <p>
-          <input type="button" value="{check_answer}" name="answer" class="input-button" onClick="checkAnswer({qnum});"/>
+          {checkanswer}
           {nextquestion}
         </p>
       </form>
 '''
-nextquestion='<input type="button" value="{next_question}" class="input-button" title="{next_question}" name="next" onClick="nextQuestion(1);"/>'
+next_question='<input type="button" value="{next_question}" class="input-button" title="{next_question}" name="next" onClick="nextQuestion(1);"/>'
+check_answer='<input type="button" value="{check_answer}" name="answer" class="input-button" onClick="checkAnswer({qnum});">'
 
 # Questions and feedback:
-input_answer = '{answer}&nbsp;<input type="text"  onChange="checkAnswer({qnum});" size="{size}"/>{after_text}'
+input_answer = '{answer}&nbsp;<input type="text"  onChange="checkAnswer({qnum});" size="{size}">{after_text}'
 choice_answer = '<table class="question-choices">{choices}</table>{after_text}'
-input_single = '\n<input type="hidden" name="Q{qnum}hidden"/>'
+input_single = '\n<input type="hidden" name="Q{qnum}hidden">'
 
-single_item = '''<td><input type="radio" name="Q{qnum}option"/></td>
+single_item = '''<td><input type="radio" name="Q{qnum}option"></td>
 <td class="brown" >{choice}</td><td><div class="question-choices">{text}</div></td>
 '''
-multiple_item = '''<td><input type="checkbox" name="Q{qnum}option{optnum}"/></td>
+multiple_item = '''<td><input type="checkbox" name="Q{qnum}option{optnum}"></td>
 <td class="brown" >{choice}</td><td><div class="question-choices">{text}</div></td>
 '''
 

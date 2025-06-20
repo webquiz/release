@@ -2,10 +2,11 @@
 r'''
 ------------------------------------------------------------------------------
     webquiz | Online quizzes generated from LaTeX using python and TeX4ht
-               | This module mainly deals with command-line options and
-               | settings and then calls MakeWebQuiz to build the quiz
+            | This module mainly deals with command-line options and
+            | settings and then calls MakeWebQuiz to build the quiz
 ------------------------------------------------------------------------------
-    Copyright (C) Andrew Mathas and Donald Taylor, University of Sydney
+    Copyright (C) Andrew Mathas, University of Sydney
+    Partly based on earlier code by Donald Taylor
 
     Distributed under the terms of the GNU General Public License (GPL)
                   http://www.gnu.org/licenses/
@@ -160,6 +161,30 @@ class WebQuizSettings:
             'can_set_from_latex': True,
             'help': 'Randomly order the quiz questions',
         },
+        marking_api={
+            'default': '',
+            'can_set_from_latex': True,
+            'help': 'API that can receive a POST request containing the quiz results as json'
+        },
+        submit_button={
+            'default': False,
+            'can_set_from_latex': True,
+            'help': 'Add submit button to quiz page',
+        },
+        time_limit={
+            'default': 0,
+            'can_set_from_latex': True,
+            'help': 'Quiz time limit (0 is unlimited)',
+        },
+        theme={
+            'default': 'default',
+            'can_set_from_latex': True,
+            'help': 'Default colour theme used on web pages',
+        },
+        version={
+            'help': 'WebQuiz version number for webquizrc settings',
+            'settable': False,
+        },
         make4ht={
             'advanced': True,
             'default': '',
@@ -169,20 +194,6 @@ class WebQuizSettings:
             'advanced': True,
             'default': 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js',
             'help': 'URL for mathjax',
-        },
-        theme={
-            'default': 'default',
-            'can_set_from_latex': True,
-            'help': 'Default colour theme used on web pages'
-        },
-        time_limit={
-            'default': 0,
-            'can_set_from_latex': True,
-            'help': 'Quiz time limit (0 is unlimited)'
-        },
-        version={
-            'help': 'WebQuiz version number for webquizrc settings',
-            'settable': False,
         },
         webquiz_layout={
             'advanced': True,
@@ -701,7 +712,7 @@ if __name__ == '__main__':
         install_parser.add_argument('--diagnostics',
             action='store_true',
             default=False,
-            help='Print diagnostic messages for WebQuiz (used when submitting bug reports'
+            help='Print diagnostic messages for WebQuiz (use when submitting bug reports)'
         )
 
         install_parser.add_argument('--tex-install',

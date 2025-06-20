@@ -16,6 +16,7 @@ r'''
 ------------------------------------------------------------------------------
 '''
 import subprocess
+import json
 import codecs
 import shutil
 import os
@@ -24,6 +25,8 @@ import re
 import webquiz_templates
 import webquiz_util
 import webquiz_xml
+
+from base64 import urlsafe_b64encode, urlsafe_b64decode
 
 #################################################################################
 class MakeWebQuiz(object):
@@ -280,9 +283,9 @@ class MakeWebQuiz(object):
                     cls='button-selected' if self.quiz.discussion_list==[] and q==1 else 'blank'
                 )
                 for q in range(1, self.number_questions + 1))
-            question_buttons=webquiz_templates.question_buttons.format(
-                buttons=buttons, **self.language
-            )
+            question_buttons=webquiz_templates.question_buttons.format( buttons=buttons)
+            if self.quiz.time_limit == 0:
+                question_buttons += webquiz_templates.marking_key.format( ** self.language )
 
         # the full side menu
         self.side_menu = webquiz_templates.side_menu.format(
@@ -292,14 +295,14 @@ class MakeWebQuiz(object):
             institution=institution,
             side_questions=self.language['questions'] if self.number_questions>0 else '',
             question_buttons=question_buttons,
-            copyright_years=self.metadata.copyright[:self.metadata.copyright.index(' ')],
+            copyright_years=self.metadata.copyright.split()[0],
             **self.language)
 
     def add_question_javascript(self):
         """
         Add the javascript for the questions to self and write the javascript
         initialisation file, <quiz>/quiz_specs.js, for the quiz.  When the quiz
-        page is loaded, WebQuizInit reads the quiz_specs initialisation file to
+        page is loaded, webQuizInit reads the quiz_specs initialisation file to
         load the answers to the questions,  and the headers for the discussion
         items. We don't explicitly list quiz_specs.js in the meta data for the
         quiz page because we want to hide this information from the student,
@@ -310,42 +313,47 @@ class MakeWebQuiz(object):
         try:
             os.makedirs(self.quiz_name, exist_ok=True)
             os.chmod(self.quiz_name, mode=0o755)
+            wq = ''
+            if self.number_discussions > 0:
+                for (i, d) in enumerate(self.quiz.discussion_list):
+                    wq += f'WQ.discussions[{i}]="{d.heading}";\n'
+            if self.number_questions > 0:
+                for (i, question) in enumerate(self.quiz.question_list):
+                    # WQ.questions is a 0-based array
+                    wq += f'WQ.questions[{i+1}]={{type: "{question.type}",'
+                    if question.type == 'input':
+                        wq += ' value: "{}",'.format(
+                            i+1,
+                            question.answer.lower() if question.comparison=='lowercase'
+                                                    else question.answer
+                        )
+                        wq += f' comparison: "{question.comparison}"}};\n'
+                    else:
+                        wq += f' values: [{",".join(f"{s.correct}" for s in question.items)}]}};\n'
+
+            print(wq,'\n', )
+
+            if self.quiz.marking_api:
+                wq += f'WQ.markingApi = "{self.quiz.marking_api}";\n'
+            if self.quiz.one_page:
+                wq += 'WQ.onePage = true;\n'
+            if self.quiz.random_order:
+                wq += 'shuffleQuestions();\n'
+            if self.quiz.hide_side_menu:
+                wq += 'toggleSideMenu();\n'
+
             with codecs.open(os.path.join(self.quiz_name, 'wq-' + self.quiz_name + '.js'), 'w',
                              encoding='utf8', errors='replace') as quiz_specs:
-                if self.number_discussions > 0:
-                    for (i, d) in enumerate(self.quiz.discussion_list):
-                        quiz_specs.write(f'Discussion[{i}]="{d.heading}";\n')
-                if self.number_questions > 0:
-                    for (i, question) in enumerate(self.quiz.question_list):
-                        # QuizSpecifications is a 0-based array
-                        quiz_specs.write(f'QuizSpecifications[{i+1}]=[];\n')
-                        quiz_specs.write(f'QuizSpecifications[{i+1}].type="{question.type}";\n')
-                        if question.type == 'input':
-                            quiz_specs.write('QuizSpecifications[{}].value="{}";\n'.format(i+1,
-                                question.answer.lower() if question.comparison=='lowercase'
-                                                        else question.answer
-                              )
-                            )
-                            quiz_specs.write(f'QuizSpecifications[{i+1}].comparison="{question.comparison}";\n')
-                        else:
-                            quiz_specs.write(''.join(f'QuizSpecifications[{i+1}][{j}]={s.correct};\n'
-                                                        for (j, s) in enumerate(question.items)
-                                )
-                            )
 
-                if self.quiz.hide_side_menu:
-                    quiz_specs.write('toggle_side_menu();\n')
-                if self.quiz.one_page:
-                    quiz_specs.write('onePage = true;\n')
-                if self.quiz.random_order:
-                    quiz_specs.write('shuffleQuestions();\n')
+                # We encode the quiz specifications so that people can't use
+                # the developers tools to read answers. Of course, with a
+                # little more effort, they can still read them...
+                quiz_specs.write(f'wq="{urlsafe_b64encode(json.dumps(wq).replace(' ', '').encode()).decode()}";\n')
+                # initialise
+                quiz_specs.write( f'initSession({self.quiz.time_limit});\n' )
+                if not ( self.quiz.submit_button or self.number_discussions+self.number_questions == 0):
+                    quiz_specs.write( f'gotoQuestion({-1 if self.number_discussions>0 else 1});\n' )
 
-                quiz_specs.write('initSession();\n')
-                if self.number_discussions+self.number_questions>0:
-                    quiz_specs.write(f'gotoQuestion({-1 if self.number_discussions>0 else 1});\n')
-
-                if self.quiz.time_limit>0:
-                    quiz_specs.write(f'startQuizTimer({60000*self.quiz.time_limit});\n')
 
         except Exception as err:
             self.webquiz_error('error writing quiz specifications', err)
@@ -361,7 +369,7 @@ class MakeWebQuiz(object):
         Write the quiz head and the main body of the quiz.
         '''
         if self.quiz.one_page:
-            arrows = ''
+            arrows=''
         else:
             arrows = webquiz_templates.navigation_arrows.format(
                         question_number=self.quiz.discussion_list[0].heading
@@ -371,10 +379,10 @@ class MakeWebQuiz(object):
                         **self.language
                     )
 
-        # specify the quiz header - this will be wrapped in <div class="question-header>...</div>
         self.quiz_header = webquiz_templates.quiz_header.format(
             title=self.quiz.title,
             arrows=arrows,
+            quiztimer = '' if self.quiz.time_limit==0 else webquiz_templates.quiz_timer.format(**self.language),
             **self.language
         )
 
@@ -392,14 +400,21 @@ class MakeWebQuiz(object):
             # write a javascript file for displaying the menu
             # quizmenu = the index file for the quizzes in this directory
             with codecs.open('quizindex.js', 'w', encoding='utf8', errors='replace') as quizmenu:
-                quizmenu.write('var QuizTitles = [\n{titles}\n];\n'.format(
+                quizmenu.write('WQ.quizIndex = [\n{titles}\n];\n'.format(
                     titles=',\n'.join("  ['{}', '{}']".format(
                              f'{self.language["quiz"]} {num+1}. {q.title}' if q.prompt else q.title,
                              q.url
                         ) for (num,q) in enumerate(self.quiz.quiz_index))
                     )
                 )
-                quizmenu.write(webquiz_templates.create_quizindex_menu)
+                # quizmenu.write(webquiz_templates.create_quiz_index_menu)
+
+        # start with the starting page
+        if self.quiz.submit_button:
+            self.quiz_questions += webquiz_templates.starting_page.format(**self.language)
+            display = 'none'  # used below for the initial state of the question/discussion blocks
+        else:
+            display = 'inline' if self.quiz.one_page else 'none',
 
         # now comes the main page text
         # discussion(s) masquerade as negative questions
@@ -410,7 +425,7 @@ class MakeWebQuiz(object):
                 self.quiz_questions += webquiz_templates.discussion.format(
                     dnum=dnum,
                     discussion=d,
-                    display='inline' if self.quiz.one_page else 'none',
+                    display=display,
                     heading=webquiz_templates.discussion_heading.format(d.heading)
                             if self.quiz.one_page else ''
                 )
@@ -421,7 +436,7 @@ class MakeWebQuiz(object):
                 webquiz_templates.question_wrapper.format(
                     qnum=qnum + 1,
                     question_number=f'{self.language.question} {qnum+1}. ' if self.quiz.one_page else '',
-                    display='inline' if self.quiz.one_page else 'none',
+                    display=display,
                     question=self.print_question(quiz_question, qnum + 1),
                     feedback=self.print_feedback(quiz_question, qnum + 1)
                 )
@@ -451,8 +466,9 @@ class MakeWebQuiz(object):
         return webquiz_templates.question_text.format(
             qnum=qnum,
             question_text=question.text,
-            nextquestion='' if self.quiz.one_page else webquiz_templates.nextquestion.format(**self.language),
             question_options=question_options,
+            nextquestion='' if self.quiz.one_page else webquiz_templates.next_question.format(**self.language),
+            checkanswer='' if self.quiz.time_limit>0 else webquiz_templates.check_answer.format(qnum=qnum,**self.language),
             **self.language)
 
     def print_choices(self, qnum, question, part):

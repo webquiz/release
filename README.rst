@@ -65,9 +65,16 @@ This will add links from, by default, the TEXMFLOCAL directory to the WebQuiz_
 latex files, create a link to the WebQuiz_ executable and add a link from a
 location on your web server, which you will be prompted for, to the WebQuiz_
 CSS and javascript files.  The install process assumes that kpsewhich_ is
-installed on your computer. You will now be able to run WebQuiz_, however, to
-view the web pages you need to generate the `CSS` files using sass_. On
-unix-like systems you can use the `bash` shell-script `doc/makedoc -t`.
+installed on your computer. You will now be able to run WebQuiz_.
+
+If you are modifying the javascript and sass files, then you should use
+`webquiz --edit-settings` to set the `webquiz-url` so that the local
+versions of these files are used. If you do not do this, then these
+files will be accesses using the CND
+`https://cdn.jsdelivr.net/gh/webquiz/release@{<version>}/`.
+If you set `webqulz-url` to usse the local files, then you will need to
+generate the `css` files using `sass`.  On unix-like systems you can use
+the `bash` shell-script `doc/makedoc -t`.
 
 The structure of the files in the `WebQuiz github repository`_ is not suitable
 for uploading to ctan_.  WebQuiz_ is not distributed as a Python3_ package
@@ -229,7 +236,7 @@ maintained and developed by Andrew Mathas. Although the program has changed
 substantially since 2004 Don's idea of using TeX 4ht, and some of his code, is
 still very much in use.
 
-Copyright (C) 2004-2019
+Copyright (C) 2004-2025
 
 License
 -------

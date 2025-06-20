@@ -1,8 +1,9 @@
-/* -----------------------------------------------------------------------
+/* ----------------------------------------------------------------------
  *   webquiz.js | javascript for controlling webquiz web pages
  * -----------------------------------------------------------------------
  *
- *   Copyright (C) Andrew Mathas and Donald Taylor, University of Sydney
+ *   Copyright (C) Andrew Mathas, University of Sydney
+ *   Partly based on earlier code by Donald Taylor
  *
  *   Distributed under the terms of the GNU General Public License (GPL)
  *               http://www.gnu.org/licenses/
@@ -10,86 +11,47 @@
  *   This file is part of the WebQuiz system.
  *
  *   <Andrew.Mathas@sydney.edu.au>
- *   <Donald.Taylor@sydney.edu.au>
  * ----------------------------------------------------------------------
  */
 
-// Global variables
-var correct = [];           // questions answered correctly
-var buttonOrder = [];       // map from button number to question number
-var questionOrder = [];     // map from question number to button number
-var wrongAnswers = [];      // questions answered incorrectly
-
-var finishingTime = null;   // finishing time for the quiz
-var quizTimer = null;       // span element for the quiz timer on quiz page
-
-var currentB;               // current button number
-var currentFeedback = null; // feedback currently being displayed
-var currentQ;               // current question number
-var dTotal;                 // number of discussion items
-var quizindex_menu;         // handler for the drop-down menu, if it exists
-var qTotal;                 // number of quiz questions
-var side_closed;            // handler for displaying sidelabelclosed
-var side_menu;              // handler to open and close side
-var side_open;              // handler for displaying sidelabelopen
-//var theme_menu              // handler for the theme_menu
-
-// The following variables are redefined in the specifications file
-var QuizSpecifications = [];
-var Discussion = [];        // Headings of discussion environments
-var onePage = false;
-
-// Defined and read from in quizindex.js if it exists
-var QuizTitles = [];        // Quiz titles from a quizindex environment
-
-// Specification for the question buttons for use in updateQuestionMarker
-var answered = {
-    "content": "",
-    "name": "answered"
-};
-var blank = {
-    "content": "",
-    "name": "blank"
-};
-var cross = {
-    "content": "\u2718",
-    "name": "cross"
-};
-var star = {
-    "content": "\u272D",
-    "name": "star"
-};
-var tick = {
-    "content": "\u2714",
-    "name": "tick"
-};
-
-function markAnswer() {
-  if (typeof(Storage) !== "undefined") {
-    sessionStorage.correct = JSON.stringify(correct);
-    sessionStorage.wrongAnswers = JSON.stringify(wrongAnswers);
-  }
+// All of the data for the quiz is stored in the WQ object.
+var WQ = {
+    answers:          [],    // answers to each question
+    buttonOrder:      [],    // map from button number to question number
+    correct:          [],    // questions answered correctly
+    currentB:         0,     // current button number
+    currentFeedback:  null,  // feedback currently being displayed
+    currentQ:         0,     // current question number
+    discussions:      [],    // the discussions
+    markingAPI:       null,  // URL of the API that will receive the results
+    onePage:          false, // true if all questions are displayed on a single page
+    questionOrder:    [],    // map from question number to button number
+    questions:        [],    // the quiz questions
+    quizIndex:        [],    // Titles for the quiz index
+    quizIndexCreated: false, // stop the dropdown menu from being created twice
+    submitted:        false, // record whether we have submitted, so we don't submit twice
+    wrongAnswers:     [],    // questions answered incorrectly
 }
 
-// stop the dropdown menu from being created twice
-var quizindex_menu_not_created = true;
+// ----------------------------------------------------------------------
 
-// create the drop down menu dynamically using the QuizTitles array
-function create_quizindex_menu() {
-    if (quizindex_menu_not_created) {
+
+// create the drop down menu dynamically using the WQ.quizIndex array
+function createQuizIndexMenu() {
+    if ( !WQ.quizIndexCreated ) {
       // add the menu icon for the quizzes menu - only called if there is at least one quiz
       document.getElementById("quizzes-menu-icon").innerHTML = " &#9776;";
 
       var max = 0, q, quiz_link, menu = document.createDocumentFragment();
-      for (q = 0; q < QuizTitles.length; q++) {
+      for (q = 0; q < WQ.quizIndex.length; q++) {
           quiz_link = document.createElement("li");
-          quiz_link.innerHTML = '<a href="' + QuizTitles[q][1] + '">' + QuizTitles[q][0] + '</a>';
+          quiz_link.innerHTML = '<a href="' + WQ.quizIndex[q][1] + '">' + WQ.quizIndex[q][0] + '</a>';
           menu.appendChild(quiz_link);
-          max = Math.max(max, QuizTitles[q][0].length);
+          max = Math.max(max, WQ.quizIndex[q][0].length);
       }
-      quizindex_menu.style.width = Math.round(max) + "ex";
-      quizindex_menu.appendChild(menu);
-      quizindex_menu_not_created = false;
+      WQ.quizIndexMenu.style.width = Math.round(max) + "ex";
+      WQ.quizIndexMenu.appendChild(menu);
+      WQ.quizIndexCreated = true;
     }
 }
 
@@ -97,30 +59,44 @@ function create_quizindex_menu() {
 // whenever some one clicks outside of it
 function MenuEventListener(evnt) {
     var menu_icon = document.getElementById('quizzes-menu-icon');
-    if (quizindex_menu.contains(evnt.target)) {
+    if (WQ.quizIndexMenu.contains(evnt.target)) {
       return; // inside the menu so just return
     } else {   // outside the menu so check the number of menu_clicks
-      if (quizindex_menu.style.display === 'block' || menu_icon.contains(evnt.target)) {
+      if (WQ.quizIndexMenu.style.display === 'block' || menu_icon.contains(evnt.target)) {
         evnt.stopPropagation();
-        toggle_quizindex_menu();
+        toggleQuizIndexMenu();
       }
-      //if (theme_menu.style.display === 'block' || menu_icon.contains(evnt.target)) {
-      //  evnt.stopPropagation();
-      //  toggle_quizindex_menu();
-      //}
     }
 }
 
-function toggle_quizindex_menu() {
-    if (quizindex_menu.style.display === 'block') {
-      quizindex_menu.style.display = 'none';
+// toggle the display of the side menu that contains the question numbers
+function toggleQuizIndexMenu() {
+    if (WQ.quizIndexMenu.style.display === 'block') {
+      WQ.quizIndexMenu.style.display = 'none';
     } else {
-      quizindex_menu.style.display = 'block';
+      WQ.quizIndexMenu.style.display = 'block';
       window.addEventListener('click', MenuEventListener, true);
     }
 }
 
-// function toggle_theme_menu() {// unused
+// toggle the display of the side menu and its many associated labels
+function toggleSideMenu() {
+    if (WQ.sideMenu.style.display === "block" || WQ.sideMenu.style.display === "") {
+        WQ.sideMenu.style.display = "none";
+        WQ.sideOpen.style.display = "none";
+        WQ.sideClosed.style.display = "block";
+    } else {
+        WQ.sideMenu.style.display = "block";
+        WQ.sideOpen.style.display = "block";
+        WQ.sideClosed.style.display = "none";
+    }
+}
+
+// ----------------------------------------------------------------------
+// ??? implement a dynamic theme switcher
+// ??? should be coupled with a drop-down menu as in theme_menu in webquiz_templates
+// var theme_menu            // handler for the theme_menu
+// function toggleThemeMenu() {// unused
 //     if (theme_menu.style.display === 'block') {
 //       theme_menu.style.display = 'none';
 //     } else {
@@ -129,29 +105,17 @@ function toggle_quizindex_menu() {
 //     }
 // }
 
-// toggle the display of the side menu and its many associated labels
-function toggle_side_menu() {
-    if (side_menu.style.display === "block" || side_menu.style.display === "") {
-        side_menu.style.display = "none";
-        side_open.style.display = "none";
-        side_closed.style.display = "block";
-    } else {
-        side_menu.style.display = "block";
-        side_open.style.display = "block";
-        side_closed.style.display = "none";
-    }
-}
-
 // Code to hide/show questions
-function showQuestion(newB, newQ) { // newQ is an integer which is always in the correct range
-    // alert('showing newB='+newB+', newQ='+newQ+', currentQ='+currentQ+'.');
-    if (!onePage) {
+function showQuestion(newB, newQ) { // newQ is an integer which is always in the WQ.correct range
+console.log('showQuestion('+newB+', '+newQ+')')
+    // alert('showing newB='+newB+', newQ='+newQ+', WQ.currentQ='+WQ.currentQ+'.');
+    if (!WQ.onePage) {
       // hide the current question and feedback
-      if (newQ!=currentQ && currentQ!=0) {
+      if (newQ!=WQ.currentQ && WQ.currentQ!=0) {
             hideFeedback();
-            document.getElementById("question" + currentQ).style.display = "none";
+            document.getElementById("question" + WQ.currentQ).style.display = "none";
             // "de-select" the current button
-            currentB.classList.remove("button-selected");
+            WQ.currentB.classList.remove("button-selected");
       }
       // display the new question
       document.getElementById("question" + newQ).style.display = "table";
@@ -162,32 +126,34 @@ function showQuestion(newB, newQ) { // newQ is an integer which is always in the
           document.getElementById("question-number").innerHTML = String(newB);
       } else {
           document.getElementById("question-label").style.display = 'none';
-          document.getElementById("question-number").innerHTML = Discussion[-newQ];
+          document.getElementById("question-number").innerHTML = WQ.discussions[-newQ];
       }
-      // set currentB = the current button and "select" the current button
-      currentB = document.getElementById("button" + newB);
-      currentB.classList.add("button-selected");
+      // set WQ.currentB = the current button and "select" the current button
+      WQ.currentB = document.getElementById("button" + newB);
+      WQ.currentB.classList.add("button-selected");
     }
 
-    // finally set currentQ = current question
-    currentQ = newQ;
+    // finally set WQ.currentQ = current question
+    WQ.currentQ = newQ;
 }
 
+// ----------------------------------------------------------------------
 // Code to hide/show feedback
 
 function hideFeedback() {
-    if (currentFeedback) {
-        currentFeedback.style.display = "none";
+    if (WQ.currentFeedback) {
+        WQ.currentFeedback.style.display = "none";
     }
 }
 
 // show the feedback for the question unless the quiz is timed
 function showFeedback(tag) {
-    // alert('Showing feedback for '+tag+'.');
-    if (!finishingTime) {
+console.log('showFeedback: tag='+tag+', current feedback='+WQ.currentFeedback)
+    if ( !WQ.finishingTime ) {
         hideFeedback(); // hide current feedback
-        currentFeedback = document.getElementById(tag);
-        currentFeedback.style.display = "block";
+        WQ.currentFeedback = document.getElementById(tag);
+        WQ.currentFeedbackTag = tag;
+        WQ.currentFeedback.style.display = "block";
     }
 }
 
@@ -195,24 +161,25 @@ function showFeedback(tag) {
 // been answered incorrectly and if increment==-1 we find the last
 // such question
 function nextQuestion(increment) {
-    if (currentQ < 0) { // a discussion item => go to either first or last question
+console.log('nextQuestion('+increment+')')
+    if (WQ.currentQ < 0) { // a discussion item => go to either first or last question
         if (increment === 1) {
             gotoQuestion(1);
         } else {
-            gotoQuestion(qTotal);
+            gotoQuestion(WQ.qTotal);
         }
     } else {
-        var b = buttonOrder[currentQ], q;
+        var b = WQ.buttonOrder[WQ.currentQ], q;
         do {
             b += increment;
             if (b === 0) {
-                b = qTotal;
-            } else if (b > qTotal) {
+                b = WQ.qTotal;
+            } else if (b > WQ.qTotal) {
                 b = 1;
             }
-            q = questionOrder[b];
-        } while (q !== currentQ && correct[q]);
-        if (b === currentB) {
+            q = WQ.questionOrder[b];
+        } while (q !== WQ.currentQ && WQ.correct[q]);
+        if (b === WQ.currentB) {
             alert("There are no more unanswered questions");
         } else {
             gotoQuestion(b);
@@ -220,25 +187,49 @@ function nextQuestion(increment) {
     }
 }
 
-var buttons = ['answered', 'blank', 'cross', 'star', 'tick'];
+
+// ----------------------------------------------------------------------
+// Specification for the question buttons for use in updateQuestionMarker
+const  buttons = ['answered', 'blank', 'cross', 'star', 'tick'];
+const  answered = {
+    "content": "",
+    "name": "answered"
+};
+const blank = {
+    "content": "",
+    "name": "blank"
+};
+const cross = {
+    "content": "\u2718",
+    "name": "cross"
+};
+const star = {
+    "content": "\u272D",
+    "name": "star"
+};
+const tick = {
+    "content": "\u2714",
+    "name": "tick"
+};
+
 function updateQuestionMarker(bnum, qnum) {
-    // alert('updating bnum='+bnum+', qnum='+qnum+', currentQ='+currentQ+'.');
+    // alert('updating bnum='+bnum+', qnum='+qnum+', WQ.currentQ='+WQ.currentQ+'.');
     // here qnum is assumed to be the question number in the web form
     if (qnum > 0) {
         var marker = blank;
         var button = document.getElementById('button'+bnum);
-        if (finishingTime) { // don't update correct and incorrect markers if timing quiz
-            if (correct[qnum] || wrongAnswers[qnum]>0) {
+        if ( WQ.finishingTime ) { // don't update WQ.correct and incorrect markers if timing quiz
+            if (WQ.correct[qnum] || WQ.wrongAnswers[qnum]>0) {
               marker = answered;
             }
         } else {
-            if (correct[qnum]) {
-                if (wrongAnswers[qnum] === 0) {
+            if (WQ.correct[qnum]) {
+                if (WQ.wrongAnswers[qnum] === 0) {
                     marker = star;
                 } else {
                     marker = tick;
                 }
-            } else if (wrongAnswers[qnum] > 0) {
+            } else if (WQ.wrongAnswers[qnum] > 0) {
                 marker = cross;
             }
         }
@@ -252,20 +243,22 @@ function updateQuestionMarker(bnum, qnum) {
 
 // jumps to a chosen question and pushes the number of this question to the browser history
 function gotoQuestion(bnum) {
+console.log('gotoQuestion('+bnum+')')
     // bnum is a button number so we need to convert to a question number
 
-    var qnum = (bnum>0) ? questionOrder[bnum] : bnum;
+    var qnum = (bnum>0) ? WQ.questionOrder[bnum] : bnum;
     gotoQuestionHelper(qnum);
-    history.pushState(qnum, null, null);
+    history.pushState(qnum, '', '');
 }
 
 // jumps to the specified question (without pushing it to the browser history)
 function gotoQuestionHelper(qnum) {
-    var bnum = (qnum>0) ? buttonOrder[qnum] : qnum;
+    var bnum = (qnum>0) ? WQ.buttonOrder[qnum] : qnum;
     updateQuestionMarker(bnum, qnum);
     showQuestion(bnum, qnum);
 }
 
+// ----------------------------------------------------------------------
 // dictionary of comparison methods for when question.type=='input'
 // each function in the dictionary returns true or false
 var compare = {
@@ -288,109 +281,102 @@ var compare = {
              }
 };
 
-// check to see whether the answer is correct and update the markers accordingly
+// check to see whether the answer is WQ.correct and update the markers accordingly
 function checkAnswer(qnum) {
-    // alert('checking qnum='+qnum+'.');
-    var question = QuizSpecifications[qnum];
+    var question = WQ.questions[qnum];
     var studentAnswer = document.forms["Q" + qnum + "Form"];
     var i;
-    if (question.type == "input") {
-        var answer = studentAnswer.elements[0].value;
-        if (answer=='') { //must have hit checkAnswer without answering, so ignore
-          alert('Please answer the question first!');
-          return;
-        }
-        try {
-          correct[qnum] = compare[question.comparison](answer, question.value);
-        } catch(err) {
-          correct[qnum] = False;
-        }
+    console.log('checking qnum='+qnum+', question type='+question.type);
+    switch (question.type) {
+        case "input":
+            var answer = studentAnswer.elements[0].value;
+            if (answer=='') { // must have hit checkAnswer without answering, so ignore
+              alert('Please answer the question first!');
+              return;
+            }
+            try {
+              WQ.correct[qnum] = compare[question.comparison](answer, question.value);
+            } catch(err) {
+              WQ.correct[qnum] = false;
+            }
+            if (WQ.correct[qnum]) {
+                showFeedback("q" + qnum + "true");
+            } else {
+                showFeedback("q" + qnum + "false");
+            }
+            // record the answer
+            WQ.answers[qnum] = studentAnswer.elements[0].value
+            break;
 
-        if (correct[qnum]) {
-            showFeedback("q" + qnum + "true");
-        } else {
-            showFeedback("q" + qnum + "false");
-        }
-    } else if (question.type == "single") {
-        var checkedAnswer = 0;
-        for (i = 0; i < question.length; i++) {
-            if (studentAnswer.elements[i].checked) {
-                correct[qnum] = question[i];
-                checkedAnswer = i + 1;
-                break;
+        case "single":
+            var checkedAnswer = 0;
+            for (i = 0; i < question.length; i++) {
+                if (studentAnswer.elements[i].checked) {
+                    WQ.correct[qnum] = question.values[i];
+                    checkedAnswer = i + 1;
+                    break;
+                }
             }
-        }
-        showFeedback("q" + qnum + "feedback" + checkedAnswer);
-    } else { // type is "multiple"
-        var badAnswers = [];
-        for (i = 0; i < question.length; i++) {
-            if (studentAnswer.elements[i].checked !== question[i]) {
-                badAnswers.push(i + 1);
-                break;
+            showFeedback("q" + qnum + "feedback" + checkedAnswer);
+            // record the answer
+            WQ.answers[qnum] = checkedAnswer
+            break;
+
+        case "multiple":
+            var badAnswers = [];
+            WQ.answers[qnum] = []
+            for (i = 0; i < question.length; i++) {
+                if (studentAnswer.elements[i].checked ) { WQ.answers[qnum].push(i) } // record answer
+                if (studentAnswer.elements[i].checked !== question.values[i]) {
+                    badAnswers.push(i + 1);
+                    break;
+                }
             }
-        }
-        // fully correct only if badAnswers == []
-        if (badAnswers.length === 0) {
-            correct[qnum] = true;
-            showFeedback("q" + qnum + "feedback0");
-        } else {
-            // randomly display a feedback for one of incorrect choices
-            correct[qnum] = false;
-            showFeedback("q" + qnum + "feedback" + badAnswers[Math.floor(Math.random() * badAnswers.length)]);
-        }
+            // fully WQ.correct only if badAnswers == []
+            if (badAnswers.length === 0) {
+                WQ.correct[qnum] = true;
+                showFeedback("q" + qnum + "feedback0");
+            } else {
+                // randomly display a feedback for one of incorrect choices
+                WQ.correct[qnum] = false;
+                showFeedback("q" + qnum + "feedback" + badAnswers[Math.floor(Math.random() * badAnswers.length)]);
+            }
+            break;
+
+        default:
+            alert('This should not happen!! Unknown question type: '+question.type);
+            break;
     }
     //
-    if (!correct[qnum]) {
-        wrongAnswers[qnum] += 1;
+    if (!WQ.correct[qnum]) {
+        WQ.wrongAnswers[qnum] += 1;
     }
-    updateQuestionMarker(buttonOrder[qnum], qnum);
-    markAnswer();
+    updateQuestionMarker(WQ.buttonOrder[qnum], qnum);
+    saveQuizData();
 }
 
 /**
- * Shuffle the questionOrder array and make buttonOrder its inverse
+ * Shuffle the WQ.questionOrder array and make WQ.buttonOrder its inverse
  * Based on https://stackoverflow.com/questions/6274339/how-can-i-shuffle-an-array
  */
 function shuffleQuestions() {
     var i, j, qi;
-    for (i = questionOrder.length-1; i > 0; i--) {
+    for (i = WQ.questionOrder.length-1; i > 0; i--) {
         j = 1+Math.floor(Math.random() * i);
-        qi = questionOrder[i];
-        questionOrder[i]=questionOrder[j];
-        questionOrder[j]=qi;
+        qi = WQ.questionOrder[i];
+        WQ.questionOrder[i] = WQ.questionOrder[j];
+        WQ.questionOrder[j] = qi;
     }
     // ...and compute the inverse map
-    for (i = buttonOrder.length - 1; i > 0; i--) {
-        buttonOrder[questionOrder[i]] = i;
+    for (i = WQ.buttonOrder.length - 1; i > 0; i--) {
+        WQ.buttonOrder[WQ.questionOrder[i]] = i;
     }
 }
 
-// Restores the state of the question markers from the session storage
-function initSession() {
-    if (typeof(Storage) !== "undefined") {
-      if (sessionStorage.correct) {
-        correct = JSON.parse(sessionStorage.correct);
-      }
-      if (sessionStorage.wrongAnswers) {
-        wrongAnswers = JSON.parse(sessionStorage.wrongAnswers);
-      }
-      if (sessionStorage.finishingTime) {
-        finishingTime =  Date.parse(JSON.parse(sessionStorage.finishingTime));
-        updateQuizTimer();
-      }
-    }
-
-    for (i = 0; i < qTotal+1; i++) {
-      updateQuestionMarker(buttonOrder[i],i);
-    }
-
-    // make the browser history remember the first question
-    qnum = (dTotal > 0) ? -1 : questionOrder[1];
-    history.replaceState(qnum, null, null);
-}
-
+// ----------------------------------------------------------------------
 // initialise the quiz, loading specifications and setting up the first question
-function WebQuizInit(questions, discussions, quizfile) {
+function webQuizInit(questions, discussions, quizName) {
+console.log('WebQuizInit')
     // process init options
 
     // callback for browser history events
@@ -398,96 +384,248 @@ function WebQuizInit(questions, discussions, quizfile) {
        gotoQuestionHelper(e.state);
     });
 
-    qTotal = questions;
-    dTotal = discussions;
+    if ( localStorage.getItem(WQ.quizName) !== null) {
+        return
+    }
+
+    WQ.quizName = quizName
+    WQ.qTotal   = questions || 0;
+    WQ.dTotal   = discussions || 0;
 
     // remove question arrows when there are no questions
-    if (qTotal==0) {
-        try{
-            document.getElementsByClassName('arrows')[0].style.display='none';
-        }
+    if ( WQ.qTotal==0 ) {
+        try { document.getElementById('arrows').style.display='none'; }
         catch(err){}
     }
 
     // display the first question or discussion item
-    currentB = 0;
-    currentQ = 0;
-    var newQ = (dTotal > 0) ? -1 : 1;
+    var newQ = (WQ.dTotal > 0) ? -1 : 1;
 
     // set up arrays for tracking how many times the questions have been attempted
     var i;
-    for (i = 0; i < qTotal+1; i++) {
-        wrongAnswers[i] = 0;    // the number of times the question has been attempted
-        correct[i] = false;     // whether or not the supplied answer is correct
-        questionOrder[i] = i; // will determine the order of the questions
-        buttonOrder[i] = i;    // will determine the order of the buttons
+    for (i = 0; i < WQ.qTotal+1; i++) {
+        WQ.wrongAnswers[i] = 0;    // the number of times the question has been attempted
+        WQ.correct[i] = false;     // whether or not the supplied answer is WQ.correct
+        WQ.questionOrder[i] = i;   // will determine the order of the questions
+        WQ.buttonOrder[i] = i;     // will determine the order of the buttons
     }
 
     // read the question specifications for the quiz
-    // and then wait for the QuizSpecifications to load
+    // and then wait for the WQ.questions to load
     var script = document.createElement('script');
-    script.src =  quizfile + "/wq-" + quizfile + ".js";
+    script.src =  WQ.quizName + "/wq-" + WQ.quizName + ".js";
     script.type = "text/javascript";
     document.head.appendChild(script);
 
     // compute these only once
-    side_menu = document.getElementById('sidemenu');
-    side_open = document.getElementById('sidelabelopen');
-    side_closed = document.getElementById('sidelabelclosed');
-    quizindex_menu = document.getElementById("quizindex-menu");
+    WQ.sideMenu   = document.getElementById('side-menu');
+    WQ.sideOpen   = document.getElementById('side-label-open');
+    WQ.sideClosed = document.getElementById('side-label-closed');
+    WQ.quizIndexMenu = document.getElementById("quiz-index-menu");
 
-    // make the drop down menu if QuizTitles has some entries
-    if (QuizTitles.length > 0 && quizindex_menu) {
-        create_quizindex_menu();
+    // make the drop down menu if WQ.quizIndex contains any entries
+    if (WQ.quizIndex.length > 0 && WQ.quizIndexMenu) {
+        createQuizIndexMenu();
     }
+
     window.status = 'webquiz_initialised'
 }
 
-// stop the quiz and, if configured, submit the results
-function stopQuiz() {
-    // placeholder until we work out what to do here
-  alert('Time to stop! ');
+// ----------------------------------------------------------------------
+// Restores the state of the question markers from local storage
+function initSession(timeLimit) {
+console.log('initSession')
+    if ( localStorage.getItem(WQ.quizName) === null) {
+        WQ.timeLimit = timeLimit
+        eval( JSON.parse(atob(wq)) )
+        if ( WQ.timeLimit > 0 ) {
+            document.getElementById('quiz-timer').innerHTML = WQ.timeLimit+':00'
+        }
+    } else {
+        // reloading existing session
+        WQ = JSON.parse( atob(localStorage.getItem(WQ.quizName)) );
+
+        // need to reallocate
+        WQ.sideMenu   = document.getElementById('side-menu');
+        WQ.sideOpen   = document.getElementById('side-label-open');
+        WQ.sideClosed = document.getElementById('side-label-closed');
+        WQ.quizIndexMenu = document.getElementById("quiz-index-menu");
+        if ( WQ.currentFeedbackTag ) {
+            WQ.currentFeedback = document.getElementById(WQ.currentFeedbackTag);
+        } else {
+            WQ.currentFeedback = null;
+        }
+        WQ.currentB = document.getElementById("button" + WQ.currentQ);
+
+        // make the drop down menu if WQ.quizIndex contains any entries
+        if (WQ.quizIndex.length > 0 && WQ.quizIndexMenu) {
+            WQ.quizIndexCreated = false;
+            createQuizIndexMenu();
+        }
+
+        // if studentID is set, then then quiz has started
+        if ( WQ.studentID ) {
+            restartQuiz() 
+
+            // are these necessary?
+            for (var i = 0; i < WQ.qTotal+1; i++) {
+              updateQuestionMarker(WQ.buttonOrder[i],i);
+            }
+
+            // make the browser history remember the first question
+            var qnum = (WQ.dTotal > 0) ? -1 : WQ.questionOrder[WQ.currentQ];
+            history.replaceState(qnum, null, null);
+        }
+    }
+}
+
+
+// Start the quiz -- called from the starting page.
+// The `msg` says 'Please give your name before starting the quiz' in
+// the language of the quiz
+function startQuiz(msg) {
+console.log('startQuiz')
+    // record student ID
+    const startingPage = document.forms[0] // the form is the form for the starting page
+    WQ.studentID = startingPage.elements[0].value;
+    if (!WQ.studentID) {
+        alert(msg)
+        return false
+    }
+
+    // set finishing time
+    if ( WQ.timeLimit > 0 ) {
+        WQ.finishingTime = new Date()
+        WQ.finishingTime.setMinutes(WQ.finishingTime.getMinutes()+WQ.timeLimit);
+    }
+
+    // store the finishing time
+    saveQuizData()
+
+    restartQuiz()
+
+   // return false so that the form does not submit, which causes the page to reload!
+   return false
+}
+
+// 
+function restartQuiz() {
+    // start the timer
+    if ( WQ.timeLimit>0 ) { updateQuizTimer(); }
+
+    // hide the starting page and check visibility of the questions
+    document.getElementById('starting-page').style.display = 'none'
+
+    // display the submit button
+    document.getElementById('submit-button').style.display = 'inline'
+
+    if (WQ.onePage) {
+        // set the displays of all questions to inline
+        for (q = 1; q < WQ.qTotal+1; q++) {
+            document.getElementById('question'+q).style.display = 'inline';
+            if (WQ.answers[q]) {
+                // an answer already exists for this question, so update it
+                document.forms["Q"+q+ "Form"].elements[0].value = WQ.answers[q];
+            }
+        }
+    } else {
+        gotoQuestion(WQ.currentQ)
+    }
+
 }
 
 // update the quiz timer
 function updateQuizTimer() {
-    var now = new Date();
-    var remaining = finishingTime - now;
-    if ( remaining.total > 0 ) {
-        var seconds = ('0'+Math.floor((remaining/1000)%60)).slice(-2);
-        var minutes = ('0'+Math.floor((remaining/1000/60)%60)).slice(-2);
-        var hours   = Math.floor((remaining/(1000*60*60))%24);
-        if (hours>0) {
-          quizTimer.innerHTML = 'Time remaining: '+hours+':'+minutes+':'+seconds;
+console.log('updateQuizTimer')
+    var now = new Date()
+    if ( now < WQ.finishingTime ) {
+        var remaining = WQ.finishingTime - now;
+        var seconds = ('0' + Math.floor((remaining / 1000) % 60)).slice(-2);
+        var minutes = ('0' + Math.floor((remaining / 1000 / 60) % 60)).slice(-2);
+        var hours = Math.floor((remaining / (1000 * 60 * 60)) % 24);
+        if ( !WQ.quizTimer ) {
+            WQ.quizTimer = document.getElementById('quiz-timer');
+        }
+        if (hours > 0) {
+            WQ.quizTimer.innerHTML = hours + ':' + minutes + ':' + seconds;
         } else {
-          quizTimer.innerHTML = 'Time remaining: '+minutes+':'+seconds;
+            WQ.quizTimer.innerHTML = minutes + ':' + seconds;
         }
         // update the quiz timer every second
-        setInterval(updateQuizTimer, 1000);
-    } else {
-        stopQuiz();
+        setTimeout(updateQuizTimer, 1000);
+
+    } else if ( localStorage.getItem(WQ.quizName ) !== null) {
+        // submit provided that we have actually started the quiz
+        console.log('Finishing at '+WQ.finishingTime.toLocaleString()+', now = '+Date())
+        submitQuiz();
     }
 }
 
-// start the quiz timer
-function startQuizTimer(timeLimit) {
-   console.log('time limit = '+timeLimit)
-    if ( !sessionStorage.finishingTime ) {
-        // set finishingTime to current date
-        finishingTime = new Date();
-   console.log('start time = '+finishingTime)
-        // add timeLimit in minutes to current time work out finishing time
-        finishingTime.setMinutes(finishingTime.getMinutes() + timeLimit);
-        // save in session storage
-        sessionStorage.finishingTime = JSON.stringify(finishingTime);
-   console.log('finishing time = '+sessionStorage.finishingTime)
-        // get and set the name of the document quiz-timer
-        if (!quizTimer) {
-            quizTimer = document.getElementById('quiz-timer');
+// save data for the current quiz and student to localStorage
+function saveQuizData() {
+console.log('saveQuizData')
+    localStorage.setItem(WQ.quizName, btoa(JSON.stringify(WQ)))
+}
+
+async function submitQuiz(msg='') {
+console.log('submitQuiz')
+    // if WQ.markingApi exists then use a POST request to put the quiz results
+    if ( WQ.markingApi && !WQ.submitted && WQ.quizTimer) {
+
+        // if they are submittig more than two minues early and, if so,
+        // ask for confirmation
+        var now = new Date()
+        if ( msg && (WQ.finishingTime-now)/60000 > 2 ) {
+            if ( ! confirm(msg) ) { return }
         }
-        // start the quiz timer
-        updateQuizTimer();
+
+        // prepare the data to send
+        var headers='Student', results=WQ.studentID, total=0;
+        for (var q=1; q <= WQ.qTotal; q++) {
+            headers += ', Q'+q
+            if ( WQ.correct [q] ) {
+                total += 1
+                results += ', 1'
+            } else {
+                results += ', 0'
+            }
+        }
+        headers += ', Total'
+        results += ', '+total
+        const data = {
+            method: 'POST',
+            headers: {
+              'Accept': 'application/json',
+              'Content-type': 'application/json; charset=UTF-8'
+            },
+            body: btoa(JSON.stringify({
+              'quiz':    WQ.quizName,
+              'ID':      WQ.studentID,
+              'headers': headers,
+              'results': results
+            }))
+        }
+        // send a POST request to WQ.markingApi
+        await fetch(WQ.markingApi, data)
+        .then ( response => {
+            if (!response.ok) {
+              // Handle HTTP errors
+              alert('There weas a problem submitting your results: '+error.message+'. Please send '+data.body+' to your unit administrator')
+              throw new Error(`HTTP error! Status: ${response.status}`);
+            } else {
+                console.log('Success:', response.json()['message']);
+                WQ.submitted = true
+
+                // remove the timer and the sumit button
+                WQ.finishingTime = now;
+                WQ.quizTimer.innerHTML = '';
+                document.getElementById('quiz-timer-submit').style.display = "none";
+            }
+        })
+      .catch(error => {
+        // Tell the student that we could not submit their results
+        console.error('Request failed:'+ error.message);
+        alert('There weas a problem submitting your results: '+error.message+'. Please send '+data.body+' to your unit administrator')
+      })
     }
-    // hide the marking key
-    document.getElementsByClassName('marking-key')[0].style.visibility = 'hidden';
 }

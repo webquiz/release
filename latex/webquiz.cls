@@ -29,6 +29,9 @@
 
 \newif\ifWQ@Debugging  % for the debugging class option
 % Process the documentclass options using pgfkeys and \ProcessPgfOptions
+% Any options that can be set in the webquizrc file should be given a
+% value of DeFaUlT as this tells WebQuiz that the options have not been
+% set in the LaTeX file and hence should revert to their default value.
 \pgfkeys{/WQ@ClassOptions/.is family,
   /WQ@ClassOptions,
     % turn debugging on
@@ -55,8 +58,15 @@
     theme/.initial             = DeFaUlT,
     % tikz
     tikz/.code                 = {\global\WQ@Tikztrue},
+    % api = URL for api to receive the results
+    markingapi/.initial        = DeFaUlT,
+    % add submit button to quiz page
+    submit/.initial            = DeFaUlT,
+    submit/.style              = {submit value=true},
+    submit value/.initial      = DeFaUlT,
+    nosubmit/.style            = {submit value=false},
     % time limit for timed quizzes: the default of 0 means the quiz is not timed
-    timelimit/.initial         = 0,
+    time/.initial              = DeFaUlT,
     % unknown options are passed to the underlying article class
     .unknown/.code             = {\edef\unknown@options{\unknown@options,\pgfkeyscurrentname}}
 }

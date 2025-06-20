@@ -215,15 +215,19 @@ class Convert:
             chrome.set_window_size(self.width, self.width)
 
         # load the web page
-        chrome.get(f'{examplesURL}/{self.page}.html')
-        time.sleep(1) # wait for page to load
-        if self.js:
-            out = chrome.execute_script(self.js)
-            time.sleep(self.delay/1000) # wait for javascript to execute
+        try:
+            chrome.get(f'{examplesURL}/{self.page}.html')
+            time.sleep(1) # wait for page to load
+            if self.js:
+                out = chrome.execute_script(self.js)
+                time.sleep(self.delay/1000) # wait for javascript to execute
 
-        self.print(f' - saving screenshot to {self.page_out}')
-        chrome.save_screenshot(f'{self.page_out}.png')
-        run(f'mogrify -trim -gravity center {self.page_out}.png')
+            self.print(f' - saving screenshot to {self.page_out}')
+            chrome.save_screenshot(f'{self.page_out}.png')
+            run(f'mogrify -trim -gravity center {self.page_out}.png')
+        except Exception as err:
+            print(f'Exception {err} when running selenium for {self.page_out}')
+
 
     def shot_scraper(self):
         '''
@@ -346,6 +350,7 @@ class Convert:
 
 # Specify the pages to construct using the Convert class:
 pages = [
+    Convert("answer",           Question="1:canberra"),
     Convert("answer-complex",   Question="1:7+i|2:i+7"),
     Convert("answer-integer",   Question="1:18"),
     Convert("answer-lowercase", Question="1:long|2:LONG"),
@@ -353,7 +358,7 @@ pages = [
     Convert("answer-star",      Question="1:Canberra|2:canberra"),
     Convert("answer-string",    Question="1:canberra"),
     Convert("breadcrumbs"),
-    Convert("breadcrumbs",      page_out="breadcrumbs-dropdown", js='toggle_quizindex_menu();'),
+    Convert("breadcrumbs",      page_out="breadcrumbs-dropdown", js='toggleQuizIndexMenu();'),
     Convert("choice-multiple"),
     Convert("choice-single"),
     Convert("ctanLion"),
@@ -373,8 +378,8 @@ pages = [
     Convert("random",           js="questionOrder=[0,4,3,2,1];", Question='1:1:', js_end="gotoQuestion(4);checkAnswer(1);"),
     Convert("simple",           page_out='simple-html', question='1:1'),
     Convert("simple",           src='pdf',  page_out='simple-pdf'),
-    Convert("theme-default",    page_out="quizindex-dropdown", js='toggle_quizindex_menu();'),
-    Convert("theme-*",          width=800, question="1:1,7|3:1|3:1,7|6:4", js_end='toggle_quizindex_menu();', delay=3000),
+    Convert("theme-default",    page_out="quizindex-dropdown", js='toggleQuizIndexMenu();'),
+    Convert("theme-*",          width=800, question="1:1,7|3:1|3:1,7|6:4", js_end='toggleQuizIndexMenu();', delay=3000),
     Convert("tikz-ex"),
     Convert("timed"),
 ]
