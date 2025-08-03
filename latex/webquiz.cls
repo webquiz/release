@@ -40,12 +40,16 @@
     pst2pdf/.style             = {pst2pdf value=true, pst2pdfcomment={\textsc{WebQuiz} will process this quiz using \textbf{pst2pdf}}},
     pst2pdf value/.initial     = false,
     pst2pdfcomment/.initial    =,
+    % feedback
+    feedback/.style            = {feedback value=true},
+    nofeedback/.style          = {feedback value=false},
+    feedback value/.initial    = DeFaUlT,
     % language
     language/.initial          = DeFaUlT,
     % one page
     onepage/.style             = {onepage value=true},
-    separatepages/.style       = {onepage value=false},
     onepage value/.initial     = DeFaUlT,
+    separatepages/.style       = {onepage value=false},
     % side menu
     showsidemenu/.style        = {hidesidemenu value=false},
     hidesidemenu/.style        = {hidesidemenu value=true},
@@ -60,6 +64,8 @@
     tikz/.code                 = {\global\WQ@Tikztrue},
     % api = URL for api to receive the results
     markingapi/.initial        = DeFaUlT,
+    % javascript session store
+    store/.initial             = DeFaUlT,
     % add submit button to quiz page
     submit/.initial            = DeFaUlT,
     submit/.style              = {submit value=true},
@@ -70,7 +76,7 @@
     % unknown options are passed to the underlying article class
     .unknown/.code             = {\edef\unknown@options{\unknown@options,\pgfkeyscurrentname}}
 }
-\newcommand\WQ@ClassOption[1]{\pgfkeysvalueof{/WQ@ClassOptions/#1}}
+\newcommand\WebQuizSettings[1]{\pgfkeysvalueof{/WQ@ClassOptions/#1}}
 
 % Use pgfkeys to check for valid options for the choice environment and the
 % answer comparisons. As \ERROR is not defined an error message is
@@ -179,7 +185,7 @@
   \maketitle%
   \def\title{\WQ@Error{\noexpand\title can only be used in the preamble}\@ehc}
   \thispagestyle{firstpage}%
-  \ifdefined\HCode\else\WQ@ClassOption{pst2pdfcomment}\fi%
+  \ifdefined\HCode\else\WebQuizSetting{pst2pdfcomment}\fi%
   \RequirePackage{tikz}
 }
 

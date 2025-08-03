@@ -2,7 +2,8 @@
 # /// script
 # requires-python = ">=3.10"
 # dependencies = [
-#    "imagehash",
+#    "numpy",
+#    "opencv-python",
 #    "selenium",
 #    "webdriver_manager",
 # ]
@@ -26,26 +27,25 @@ r'''
 Python script to extract png images for the various web pages that are in the
 webquiz manual. We first use
     - webquiz to construct the web page
-    - webkit2png to extract an image of the web page, sometimes with options
+    - selenium to extract an image of the web page, sometimes with options
+    - cv2 to compare scrapped images with test images
     - mogrify to trim the image down to size
 Alternatively, it is possible to extract a png image of the PDF file created by
-wbquiz.  For the full extraction specifications see the pages array below
+webquiz.  For the full extraction specifications see the pages array below
 
-As an added bonus, we use imagehash to store hashes for each of the extracted
-image in the file webquiz_image_hashes and we flag if any image changes
-substantially. In effect, this makes the images in the manual into a test
-suite.
+As an added bonus, we compare the images scrapped from the web pages with
+corresponding test images and report whenever the images change substantially.
+In effect, this makes the images in the manual into a test suite.
 
 REQUIRES:
-    - brew install --cask wkhtmltopdf
-    - pip install imagehash
-    - pip install playwright && playwright install
+    - uv to run the script and install dependencies on the fly
 '''
 
 import argparse
+import cv2
 import glob
 import json
-import imagehash
+import numpy
 import os
 import re
 import shutil
@@ -164,6 +164,27 @@ class Convert:
         if not self.quiet:
             print(msg)
 
+
+
+    def compare_images(self, new_image, test_image):
+        '''
+        Compare and return their threshold difference.
+        '''
+        new = cv2.cvtColor(cv2.imread(new_image),  cv2.COLOR_BGR2GRAY)
+        tes = cv2.cvtColor(cv2.imread(test_image), cv2.COLOR_BGR2GRAY)
+        # Resize to the same shape if necessary
+        if new.shape != tes.shape:
+            print(f'WARNING: {new_image} and {test_image} have different sizes')
+            tes = cv2.resize(tes, (new.shape[1], new.shape[0]))
+
+        diff = cv2.absdiff(new, tes)
+        # threshold the difference image
+        _, thresh = cv2.threshold(diff, 30, 255, cv2.THRESH_BINARY)
+
+        # return non-zero pixels to quantify difference
+        return (numpy.count_nonzero(thresh) / thresh.size) * 100
+
+
     def write_image(self):
         r'''
           Convert self.page to self.page_out.
@@ -171,7 +192,6 @@ class Convert:
           If `cleaning` is `True` then all unnecessary files are deleted
           once after the image is created
         '''
-        global webquiz_image_hashes
         if self.options.force or self.modified():
             self.print(f'\nExtracting image file {self.page} to examples/{self.page_out}.png ...')
             if os.path.exists(self.page_out+'.png'):
@@ -189,12 +209,10 @@ class Convert:
 
                 # if the image file exists compare with the saved image hash
                 if os.path.isfile(f'{self.page_out}.png'):
-                    new_hash = imagehash.colorhash(Image.open(f'{self.page_out}.png'), binbits=3)
-                    if self.page_out in webquiz_image_hashes:
-                        if imagehash.hex_to_flathash(webquiz_image_hashes[self.page_out], hashsize=3) - new_hash > 10:
-                            print(f'Bad image hash for {self.page_out}')
-                    else:
-                        webquiz_image_hashes[self.page_out] = str(new_hash)
+                    percentage_difference = self.compare_images(self.page_out+'.png', self.page_out+'-test.png')
+                    print(f'{self.page_out}: {percentage_difference}')
+                    if percentage_difference > 5:
+                        print(f'WARNING The image for {self.page_out} has changed')
 
             except KeyError:
                 raise ValueError(f'unknown src={self.src} for {self.page}')
@@ -202,7 +220,8 @@ class Convert:
             if self.options.cleaning:
                 for ext in ['.log', '.xml', '-[cft]*.png']:
                     for file in glob.glob(self.page_out+ext):
-                        os.remove(file)
+                        if not file.endswith('-test.png'):
+                            os.remove(file)
 
         else:
             self.print(f'{page.page_out} is up to date')
@@ -447,7 +466,3 @@ if __name__ == '__main__':
             page(args)
 
     chrome.quit()
-
-    # save the possibly updated image hashes
-    with open(image_hash_file,'w') as json_file:
-        json.dump(webquiz_image_hashes, json_file, ensure_ascii=False, indent=2, sort_keys=True)

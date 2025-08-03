@@ -25,15 +25,16 @@
 >
 <!ATTLIST webquiz
    debugging     CDATA #REQUIRED
+   feedback      CDATA #REQUIRED
    language      CDATA #REQUIRED
+   marking_ap    CDATA #REQUIRED
    one_page      CDATA #REQUIRED
    pst2pdf       CDATA #REQUIRED
    random_order  CDATA #REQUIRED
    showsidemenu  CDATA #REQUIRED
    src           CDATA #REQUIRED
-   theme         CDATA #REQUIRED
-   marking_ap    CDATA #REQUIRED
    submit_button (true|false) CDATA #REQUIRED
+   theme         CDATA #REQUIRED
    time_limit    CDATA #REQUIRED
 >
 

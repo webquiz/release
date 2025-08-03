@@ -118,8 +118,14 @@ class QuizHandler(xml.sax.ContentHandler):
                 setattr(self, key, value.lower())
             elif key in ['time_limit']:     # an integer
                 setattr(self, key, int(value))
-            elif key in ['debugging', 'hide_side_menu', 'one_page', 'pst2pdf', 'random_order', 'submit_button']: # boolean
+            elif key in ['debugging', 'feedback', 'hide_side_menu', 'one_page', 'pst2pdf', 'random_order', 'submit_button']: # boolean
                 setattr(self, key, value.lower()=='true')
+            elif key == 'store':
+                if value.lower() == 'session':
+                    setattr(self, key, 'sessionStorage')
+                else:
+                    setattr(self, key, 'localStorage')
+
             else:                           # a string
                 setattr(self, key, value)
 

@@ -151,6 +151,11 @@ class WebQuizSettings:
             'can_set_from_latex': True,
             'help': 'Default language used on web pages'
         },
+        feedback={
+            'default': True,
+            'can_set_from_latex': True,
+            'help': 'Display questions feedback',
+        },
         one_page={
             'default': False,
             'can_set_from_latex': True,
@@ -165,6 +170,11 @@ class WebQuizSettings:
             'default': '',
             'can_set_from_latex': True,
             'help': 'API that can receive a POST request containing the quiz results as json'
+        },
+        store={
+            'default': 'local',
+            'can_set_from_latex': True,
+            'help': 'Use either the local or session store in javascript',
         },
         submit_button={
             'default': False,

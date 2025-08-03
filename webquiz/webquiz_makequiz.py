@@ -284,7 +284,7 @@ class MakeWebQuiz(object):
                 )
                 for q in range(1, self.number_questions + 1))
             question_buttons=webquiz_templates.question_buttons.format( buttons=buttons)
-            if self.quiz.time_limit == 0:
+            if self.quiz.time_limit == 0 and self.quiz.feedback:
                 question_buttons += webquiz_templates.marking_key.format( ** self.language )
 
         # the full side menu
@@ -301,56 +301,77 @@ class MakeWebQuiz(object):
     def add_question_javascript(self):
         """
         Add the javascript for the questions to self and write the javascript
-        initialisation file, <quiz>/quiz_specs.js, for the quiz.  When the quiz
-        page is loaded, webQuizInit reads the quiz_specs initialisation file to
-        load the answers to the questions,  and the headers for the discussion
-        items. We don't explicitly list quiz_specs.js in the meta data for the
-        quiz page because we want to hide this information from the student,
-        although they can easily get this if they open by the javascript
-        console and know what to look for.
+        initialisation file, <quiz>/wq-<quiz_name>.js, for the quiz.  When the
+        quiz page is loaded, webQuizInit reads this quiz_specs initialisation
+        file to load the quiz questions and answers and other quiz data. To
+        hide this data from the students, we do not explicitly list this
+        specifications file in the meta data for the quiz page because we want
+        to hide this information from the student, although they will be able
+        to extract if they are persistent enough. As of version 6, this data is
+        not easily from the console and the specifications file is encrypted.
         """
 
         try:
             os.makedirs(self.quiz_name, exist_ok=True)
             os.chmod(self.quiz_name, mode=0o755)
-            wq = ''
+
+            # add quiz settings to wq
+            wq = f'{{store:"{self.quiz.store}Storage",feedback:{str(self.quiz.feedback).lower()},'
+            wq += f'sideMenuOpen:{str(not self.quiz.hide_side_menu).lower()},'
+            if self.quiz.marking_api:
+                wq += f'markingApi:"{self.quiz.marking_api}",'
+            if self.quiz.one_page:
+                wq += 'onePage:true,'
+            if self.quiz.random_order:
+                wq += 'shuffleQuestions:true,'
+
             if self.number_discussions > 0:
-                for (i, d) in enumerate(self.quiz.discussion_list):
-                    wq += f'WQ.discussions[{i}]="{d.heading}";\n'
+                wq+='discussion:[{",".join(f"{d.heading}" for d in self.quiz.discussion_list}],'
             if self.number_questions > 0:
+                wq += "questions:["
                 for (i, question) in enumerate(self.quiz.question_list):
                     # WQ.questions is a 0-based array
-                    wq += f'WQ.questions[{i+1}]={{type: "{question.type}",'
+                    wq += f'{{type:"{question.type}",'
                     if question.type == 'input':
-                        wq += ' value: "{}",'.format(
-                            i+1,
-                            question.answer.lower() if question.comparison=='lowercase'
-                                                    else question.answer
-                        )
-                        wq += f' comparison: "{question.comparison}"}};\n'
+                        wq += f'answer:"{question.answer.lower() if question.comparison=="lowercase" else question.answer}",'
+                        wq += f'comparison:"{question.comparison}"}},'
+                    elif question.type == 'single':
+                        ans = -1
+                        for q,s in enumerate(question.items):
+                            if s.correct == "true":
+                                ans = q
+                                break
+                        wq += f'answer:{ans}}},'
+                        if ans == -1:
+                            print(f'WARNING: Question {i+1} does not have a correct answer: {question.items}')
                     else:
-                        wq += f' values: [{",".join(f"{s.correct}" for s in question.items)}]}};\n'
+                        wq += f'answer:[{",".join(f"{q}" for q,s in enumerate(question.items) if s.correct=="true")}]}},'
+                wq +=']'
 
-            print(wq,'\n', )
+            wq += '}'
+            self.webquiz_debug('\nWebQuiz settings:\n  '+wq.replace(',',',\n  '))
 
-            if self.quiz.marking_api:
-                wq += f'WQ.markingApi = "{self.quiz.marking_api}";\n'
-            if self.quiz.one_page:
-                wq += 'WQ.onePage = true;\n'
-            if self.quiz.random_order:
-                wq += 'shuffleQuestions();\n'
-            if self.quiz.hide_side_menu:
-                wq += 'toggleSideMenu();\n'
-
-            with codecs.open(os.path.join(self.quiz_name, 'wq-' + self.quiz_name + '.js'), 'w',
-                             encoding='utf8', errors='replace') as quiz_specs:
+            with codecs.open(
+                os.path.join(self.quiz_name, 'wq-' + self.quiz_name + '.js'),
+                'w',
+                encoding='utf8',
+                errors='replace'
+            ) as quiz_specs:
 
                 # We encode the quiz specifications so that people can't use
                 # the developers tools to read answers. Of course, with a
                 # little more effort, they can still read them...
-                quiz_specs.write(f'wq="{urlsafe_b64encode(json.dumps(wq).replace(' ', '').encode()).decode()}";\n')
+                quiz_specs.write(f'WQ.manna("{urlsafe_b64encode(json.dumps(wq).encode()).decode()[::-1]}");\n')
                 # initialise
+                quiz_specs.write('read=(s)=>{return JSON.parse(atob(s.split("").reverse().join("")))};')
+                quiz_specs.write('write=(s)=>{return btoa(JSON.stringify(WQ)).split("").reverse().join("")};')
                 quiz_specs.write( f'initSession({self.quiz.time_limit});\n' )
+
+                # add translations needed by webquiz.js
+                for msg in ['no_more', 'please_answer']:
+                    jmsg = msg.split('_')
+                    quiz_specs.write(f'Words.{jmsg[0]}{jmsg[1].capitalize()}="{self.language[f"{msg}"]}";\n')
+
                 if not ( self.quiz.submit_button or self.number_discussions+self.number_questions == 0):
                     quiz_specs.write( f'gotoQuestion({-1 if self.number_discussions>0 else 1});\n' )
 
@@ -463,13 +484,18 @@ class MakeWebQuiz(object):
             )
         else:
             self.webquiz_error(f'Unknown question type "{question.type}" in question {qnum}')
+        # when giving feedback change the next/previous question buttons to next/previous UNANSWERED question
+        if self.quiz.feedback:
+            self.language['next_question'] = self.language['next_unanswered']
+            self.language['previous_question'] = self.language['previous_unanswered']
         return webquiz_templates.question_text.format(
             qnum=qnum,
             question_text=question.text,
             question_options=question_options,
             nextquestion='' if self.quiz.one_page else webquiz_templates.next_question.format(**self.language),
-            checkanswer='' if self.quiz.time_limit>0 else webquiz_templates.check_answer.format(qnum=qnum,**self.language),
-            **self.language)
+            checkanswer=webquiz_templates.check_answer.format(qnum=qnum,**self.language) if not (self.quiz.feedback and self.quiz.time_limit>0) else '',
+            **self.language
+        )
 
     def print_choices(self, qnum, question, part):
         r'''

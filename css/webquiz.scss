@@ -37,9 +37,9 @@ body {
 div.quiz-page {
   position: absolute;
   top: 36px;
-  left: 5%;
-  min-width: 60%;
-  width:88%;
+  left: 5vw;
+  min-width: 60vw;
+  width:88vw;
 }
 
 div.button, span.button {
@@ -196,27 +196,27 @@ div.side-menu {
 
     }
 
-    marking-key#table {
+    table#marking-key {
         margin-left: 2px;
         clear: left;
     }
 
-    marking-key#table tbody tr td {
+    table#marking-key tbody tr td {
       width: 2ex;
       padding-right: 2px !important;
     }
 
-    marking-key#table tbody tr td.cross {
+    table#marking-key tbody tr td.cross {
       font-size: medium;
       color: $CrossButtonFG;
     }
 
-    marking-key#table tbody tr td.star {
+    table#marking-key tbody tr td.star {
       font-size: small;
       color: $StarButtonFG;
     }
 
-    marking-key#table tbody tr td.tick {
+    table#marking-key tbody tr td.tick {
       font-size: medium;
       color: $TickButtonFG;
     }
@@ -310,7 +310,7 @@ div.quiz-questions {
     display: grid;
 
     div.quiz-header {
-        padding-right: 1%;
+        padding-right: 1vw;
         width: inherit;
 
         div.quiz-title {
@@ -320,23 +320,23 @@ div.quiz-questions {
             font-weight: bold;
             text-align: center;
             margin-bottom: 0.8ex;
-            min-width: 50%;
+            min-width: 50vw;
         }
 
-        arrows#span {
+        span.arrows {
             color: $Subheading;
             float: right;
-            right: 5%;
+            right: 5vw;
             font-size: 12px;
             margin-right: 20px;
         }
 
-        arrows#span A { text-decoration: none !important; }
-        arrows#span A {
+        span.arrows A { text-decoration: none !important; }
+        span.arrows A {
             color: $Subheading;
             font-size: 12px;
         }
-        arrows#span A:hover {
+        span.arrows A:hover {
             color: darken($Subheading, 20%);
             text-decoration: underline;
         }
@@ -368,8 +368,8 @@ div.quiz-questions {
 
     /* specifications for the divs containing questions, answers and feedback */
     div.question {
-        padding-right: 1%;
-        width: 80%;
+        padding-right: 1vw;
+        width: 80vw;
         position: relative;
         margin: 0 0 5px 0;
         display: none;
@@ -456,8 +456,8 @@ div.warning {
     border: 2px solid $Heading;
     color: $WarningFG;
     padding: 2mm;
-    top: 20%;
-    left: 20%;
+    top: 20vh;
+    left: 20vw;
     position: absolute;
     z-index: 999;
 }
@@ -494,7 +494,7 @@ nav {
       margin: 0;
       padding: 0;
       list-style-type: none;
-      position: absolute; /* Ensures that the menu doesn’t affect other elements */
+      position: absolute; /* Ensures that the menu does not affect other elements */
 
       li {
           text-align: center;  /* All text is placed in the center of the box */
@@ -613,6 +613,8 @@ nav {
     }
 }
 
+// menus
+
 div#menu-icon {
   display: inline-block;
   color: $Heading;
@@ -633,27 +635,22 @@ span#quizzes-menu-icon {
   font-size: 8px;
 }
 
-span#side-label-Open   { display: block; }
-span#side-label-Closed { display: none; }
+div #side-menu         { display: none; }
+span#side-label-open   { display: none; }
+span#side-label-Closed { display: block; }
 
 /*
  * MEDIA QUERIES
  */
 @media (max-width : 600px) {
-    div.side-menu { display: none; }
-    #side-label-Open   span { display: none; }
-    #side-label-Closed span { display: block; }
     div.breadcrumbs {display: none; }
     div.quiz-page { top: 6px; }
-    div.quiz-questions {width: 96%; }
+    div.quiz-questions {width: 96vw; }
 }
 
 @media (min-width : 601px) {
-    div.side-menu { display: block; }
-    #side-label-open   span { display: block; }
-    #side-label-closed span { display: none; }
     div.breadcrumbs {display: block; }
     div.quiz-page { top: 36px; }
-    div.quiz-questions {width: 80%; }
+    div.quiz-questions {width: 80vw; }
 }
 
