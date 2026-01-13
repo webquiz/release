@@ -1,0 +1,35 @@
+[project]
+name = "webquiz"
+version = "6.0.0"
+description = "A LaTeX package for writing online quizzes"
+requires-pythonb = ">=3.12"
+readme = "README.rst"
+authors = "Andrew Mathas"
+keywords = [
+  "LaTeX",
+  "quiz",
+  "web"
+]
+licence = "GNU General Public License, Version 3, 29 June 2007"
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Environment :: Console",
+  "Environment :: Web Environment",
+  "Intended Audience :: Education",
+  "Intended Audience :: Information Technology",
+  "Intended Audience :: Science/Research",
+  "Operating System :: OS Independent",
+  "Topic :: Education :: Testing",
+  "Topic :: Internet :: WWW/HTTP",
+  "Topic :: Scientific/Engineering",
+  "Topic :: Text Processing :: Markup :: HTML",
+  "Topic :: Text Processing :: Markup :: LaTeX",
+  "Topic :: Text Processing :: Markup :: XML",
+]
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+[tool.setuptools.package-data]
+package_data     = {"webfiles" : ["/"]}
+[project.scripts]
+webquiz = "webquiz._main__:main"
