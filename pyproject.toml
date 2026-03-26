@@ -4,7 +4,10 @@ version = "6.0.0"
 description = "A LaTeX package for writing online quizzes"
 requires-pythonb = ">=3.12"
 readme = "README.rst"
-authors = "Andrew Mathas"
+authors = [{
+  name="Andrew Mathas",
+  email="andrew.mathas@gmail.com"
+}]
 keywords = [
   "LaTeX",
   "quiz",
